@@ -3,8 +3,12 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import *
+from ctypes import *
+#import sdes
 
 class mainWindow(QMainWindow):
+
+    chave_rc4 = 'teste'
 
     __instancia__: None
 
@@ -65,8 +69,19 @@ class mainWindow(QMainWindow):
     def conectar(self):
         pass
 
+    def cript_rc4(self, mensagem):
+        pass
+
     def enviar_mensagem(self, identidade):
+        #01010101
         mensagem = self.text_MSG.toPlainText()
+        chave_sdes = '1000000000'
+
+        so_des = "./sdes/sdes.so"
+        sdes_functions = CDLL(so_des)
+            
+        #print(c_char_p("10001001"))
+        mensagem = sdes_functions.cript(bytes(chave_sdes, encoding='utf-8'), bytes(mensagem, encoding='utf-8'))
 
         if identidade == 'servidor':
             cor = QColor(255, 0 ,0)
@@ -79,7 +94,7 @@ class mainWindow(QMainWindow):
         formato.setFontWeight(QFont.Bold)
 
         self.text_MSGCHAT.setCurrentCharFormat(formato)
-        self.text_MSGCHAT.append(mensagem)
+        self.text_MSGCHAT.append(str(mensagem))
         self.text_MSG.clear()
 
     def get_instancia(cls):
