@@ -1,642 +1,428 @@
-    #include <stdio.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
 
-    #include <string.h>
+//1010000010
+char* Permutation(char *chave_K, int P[], int tam){
 
-
-
-void p10(char K_p10[11], char K[11])
-
-{
-
-    K_p10[0] = K[2];
-
-    K_p10[1] = K[4];
-
-    K_p10[2] = K[1];
-
-    K_p10[3] = K[6];
-
-    K_p10[4] = K[3];
-
-    K_p10[5] = K[9];
-
-    K_p10[6] = K[0];
-
-    K_p10[7] = K[8];
-
-    K_p10[8] = K[7];
-
-    K_p10[9] = K[5];
-
-    K_p10[10] = '\0';
-
+    char *temp;
+    temp = (char*)malloc(sizeof(char)*tam);
+    int i;
+    for(i=0;i<tam;i++)
+        temp[i] = chave_K[P[i]-1];
+    return temp;
 }
 
-
-
-void separacao(char K_p10[10], char K_esq[6], char K_dir[6])
-
-{
-
+void separacao(char *chave_K, char *separationEsq, char *separationDir, int tam){
+    
     int i;
+    int j=0;
+    for(i=0;i<tam;i++)
+        separationEsq[i] = chave_K[i];
 
-    for (i = 0; i < 5; i++)
-
-    {
-
-        K_esq[i] = K_p10[i];
-
+    for(i=tam;i<(tam*2);i++){
+        separationDir[j] = chave_K[i];    
+        j++;
     }
 
-    for (i = 5; i < 10; i++)
-
-    {
-
-        K_dir[i - 5] = K_p10[i];
-
-    }
-
-    K_esq[5] = '\0';
-
-    K_dir[5] = '\0';
-
+    
 }
 
+void juncao(char *LS_, char *separationEsq, char *separationDir, int tam){
+    int i;
+    int j = 0;
+    for(i=0;i<tam;i++)
+        LS_[i] = separationEsq[i];
 
+    for(i=tam;i<(tam*2);i++){
+        LS_[i] = separationDir[j];
+        j++;
+    }
+}
 
-void rotacaoLS1(char K[6])
+void rotacaoEsq(char *separation, int tam){
+    char temp = separation[0];
+    int i;
+    for(i=0;i<tam;i++)
+        separation[i] = separation[i+1];
+    separation[i] = temp;
+}
 
-{
-
-    char aux = K[0];
+char* getXorada(char *extendedIPDir, char K[], int tam){
 
     int i;
-
-    for (i = 0; i < 4; i++)
-
-    {
-
-        K[i] = K[i + 1];
-
-    }
-
-    K[4] = aux;
-
-}
-
-
-
-void rotacaoLS2(char K[6])
-
-{
-
-    char aux1 = K[0], aux2 = K[1];
-
-
-
-    int i;
-
-    for (i = 0; i < 3; i++)
-
-    {
-
-        K[i] = K[i + 2];
-
-    }
-
-    K[3] = aux1;
-
-    K[4] = aux2;
-
-}
-
-
-
-void chaveP8(char K_esq[6], char K_dir[6], char K1[9])
-
-{
-
-    K1[0] = K_dir[0];
-
-    K1[1] = K_esq[2];
-
-    K1[2] = K_dir[1];
-
-    K1[3] = K_esq[3];
-
-    K1[4] = K_dir[2];
-
-    K1[5] = K_esq[4];
-
-    K1[6] = K_dir[4];
-
-    K1[7] = K_dir[3];
-
-    K1[8] = '\0';
-
-}
-
-
-
-void ip(char B[9], char B_esq[5], char B_dir[5])
-
-{
-
-    B_esq[0] = B[1];
-
-    B_esq[1] = B[5];
-
-    B_esq[2] = B[2];
-
-    B_esq[3] = B[0];
-
-    B_esq[4] = '\0';
-
-
-
-    B_dir[0] = B[3];
-
-    B_dir[1] = B[7];
-
-    B_dir[2] = B[4];
-
-    B_dir[3] = B[6];
-
-    B_dir[4] = '\0';
-
-}
-
-
-
-void ep(char B_dir[5], char B_expandido[9])
-
-{
-
-        // printf("B_dir[3]: %c\n", B_dir[3]);
-
-    B_expandido[0] = B_dir[3];
-
-    B_expandido[1] = B_dir[0];
-
-    B_expandido[2] = B_dir[1];
-
-    B_expandido[3] = B_dir[2];
-
-    B_expandido[4] = B_dir[1];
-
-    B_expandido[5] = B_dir[2];
-
-    B_expandido[6] = B_dir[3];
-
-    B_expandido[7] = B_dir[0];
-
-    B_expandido[8] = '\0';
-
-}
-
-
-
-void xor (char B_expandido[9], char K1[9], char R[9]) {
-
-    int i;
-
-    for (i = 0; i < 8; i++)
-
-    {
-
-            // printf("B: %c == K: %c => %d\n", B_expandido[i], K1[i], B_expandido[i] == K1[i]);
-
-        if (B_expandido[i] == K1[i])
-
-        {
-
-            R[i] = '0';
-
-        }
-
+    char *temp;
+    temp = (char*)malloc(sizeof(char)*tam);
+    for(i=0;i<tam;i++){
+        if(extendedIPDir[i] == '1' && K[i] == '1')
+            temp[i] = '0';
+        else if(extendedIPDir[i] == '0' && K[i] == '0')
+            temp[i] = '0';
         else
+            temp[i] = '1';
+    }
+    return temp;
+}
 
-        {
+void getSubKeys(char *chave_K, char K1[], char K2[]){
 
-            R[i] = '1';
+    char *separationEsq;
+    char *separationDir;
+    char *LS_;
 
-        }
+    separationEsq = (char*)malloc(sizeof(char)*5);
+    separationDir = (char*)malloc(sizeof(char)*5);
+    LS_ = (char*)malloc(sizeof(char)*10);
 
+    //printf("=============K1=================\n");
+    int P10[] = {3, 5, 2, 7, 4, 10, 1, 9, 8, 6};
+    chave_K = Permutation(chave_K, P10, 10);
+    //printf("PERMUTOU %s\n", chave_K);
+    separacao(chave_K, separationEsq, separationDir, 5);
+    //printf("SEPAROU %s | %s\n", separationEsq, separationDir);
+
+
+    //Gerando K1
+    int P8[] = {6, 3, 7, 4, 8, 5, 10, 9};
+    rotacaoEsq(separationEsq, 4);
+    rotacaoEsq(separationDir, 4);
+    //printf("ROTACIONOU %s | %s\n", separationEsq, separationDir);
+
+    juncao(LS_, separationEsq, separationDir, 5);
+    //printf("JUNTOU %s\n",LS_);
+    strcpy(K1, Permutation(LS_, P8, 8));
+    // K1 = Permutation(LS_, P8, 8);
+    //printf("PERMUTOU %s\n",K1);
+
+    //printf("=============K2=================\n");
+
+    //Gerando K2
+    separacao(LS_, separationEsq, separationDir, 5);
+    //printf("SEPAROU %s | %s\n", separationEsq, separationDir);
+    rotacaoEsq(separationEsq, 4);
+    rotacaoEsq(separationEsq, 4);
+    rotacaoEsq(separationDir, 4);
+    rotacaoEsq(separationDir, 4);
+    //printf("ROTACIONOU %s | %s\n", separationEsq, separationDir);
+    juncao(LS_, separationEsq, separationDir, 5);
+    //printf("JUNTOU %s\n",LS_);
+    strcpy(K2, Permutation(LS_, P8, 8));
+    //K2 = Permutation(LS_, P8, 8);
+    //printf("PERMUTOU %s\n",K2);
+
+ }
+
+
+void reverteString(char *S_bits){
+    char temp[1];
+    temp[0] = S_bits[0];
+    S_bits[0] = S_bits[1];
+    S_bits[1] = temp[0];
+
+    //printf("STRING REVERTIDA -> %s\n", S_bits);
+}
+
+char* getResult(char *seq_bits, char K[], int qualK){
+
+    char *separationEsq, *separationDir;
+    separationEsq = (char*)malloc(sizeof(char)*4);
+    separationDir = (char*)malloc(sizeof(char)*4);
+
+    char *S0, *S1;
+    S0 = (char*)malloc(sizeof(char)*4);
+    S1 = (char*)malloc(sizeof(char)*4);
+
+    char *S0_03, *S0_12, *S1_03, *S1_12;
+    S0_03 = (char*)malloc(sizeof(char)*2);
+    S0_12 = (char*)malloc(sizeof(char)*2);
+    S1_03 = (char*)malloc(sizeof(char)*2);
+    S1_12 = (char*)malloc(sizeof(char)*2);
+
+    char *S0_2bits, *S1_2bits;
+    S0_2bits = (char*)malloc(sizeof(char)*2);
+    S1_2bits = (char*)malloc(sizeof(char)*2);
+
+    char *extendedIPDir;
+    extendedIPDir = (char*)malloc(sizeof(char)*8);
+
+    char *ipXorado, *ip4Xorado;
+    ipXorado = (char*)malloc(sizeof(char)*8);
+    ip4Xorado = (char*)malloc(sizeof(char)*4);
+
+    char *permutP4;
+    permutP4 = (char*)malloc(sizeof(char)*4);
+
+    char *resultado;
+    resultado = (char*)malloc(sizeof(char)*8);
+
+    if (qualK == 1) {
+        //Permutando
+        int IP[] = {2,6,3,1,4,8,5,7};
+        seq_bits = Permutation(seq_bits, IP, 8);
+        //printf("IP permutado -> %s\n", seq_bits);
     }
 
-    R[8] = '\0';
+    separacao(seq_bits, separationEsq, separationDir, 4);
+
+    //Permutando
+    int EP[] = {4,1,2,3,2,3,4,1};
+    extendedIPDir = Permutation(separationDir, EP, 8);
+    //printf("EP permutado -> %s\n", extendedIPDir);
+
+    //Xorando
+    ipXorado = getXorada(extendedIPDir, K, 8);
+    //printf("EP xorado com K -> %s\n",ipXorado);
+    //criando S0 e S1
+    separacao(ipXorado, S0, S1, 4);
+    //printf("Separou\nS0 -> %s\nS1 -> %s\n", S0, S1);
+
+    /*
+    Agora precisamos utilizar essas matrizes como referencia:
+    S0 = [1 0 3 2]
+         [3 2 1 0]
+         [0 2 1 3]
+         [3 1 3 2]
+
+    S1 = [0 1 2 3]
+         [2 0 1 3]
+         [3 0 1 0]
+         [2 1 0 3]
+    */
+    int S0_Matriz[4][4] = {
+        {1, 0, 3, 2},
+        {3, 2, 1, 0},
+        {0, 2, 1 ,3},
+        {3, 1 ,3, 2}
+    };
+
+    int S1_Matriz[4][4] = {
+        {0, 1, 2, 3},
+        {2, 0, 1, 3},
+        {3, 0, 1, 0},
+        {2, 1, 0 ,3}
+    };
+    /*
+    Consideramos pegar a primeira e ultimo valor de S0 (vindo da separacao)
+    [0,3] -> pegamos o decimal dessa combinação (0 à 3)
+
+    Pegamos entao os do meio de S0 ( vindo da separação)
+    [1,2] -> pegamos o decimal dessa combinação
+    */
+
+    S0_03[0] = S0[0];
+    S0_03[1] = S0[3];
+    S0_12[0] = S0[1];
+    S0_12[1] = S0[2];
+    unsigned long S0_int03;
+    unsigned long S0_int12;
+    S0_int03 = strtoul(S0_03, NULL, 2);
+    S0_int12 = strtoul(S0_12, NULL, 2);
+    //printf("S0 inteiros\n S0_03 -> %lu\nS0_12 -> %lu\n", S0_int03, S0_int12);
+
+    S1_03[0] = S1[0];
+    S1_03[1] = S1[3];
+    S1_12[0] = S1[1];
+    S1_12[1] = S1[2];
+    unsigned long S1_int03;
+    unsigned long S1_int12;
+    S1_int03 = strtoul(S1_03, NULL, 2);
+    S1_int12 = strtoul(S1_12, NULL, 2);
+    //printf("S1 inteiros\n S1_03 -> %lu\nS1_12 -> %lu\n", S1_int03, S1_int12);
+   
+    /*
+    Os decimais pegos vão se tornar LINHA e COLUNA da matriz em questão
+    que referenciam um inteiro decimal, pegamos então esse inteiro e pegamos a sua versão
+    em binário que será o nosso vetor de 2 posições que se tornará parte do P4
+    ( faz o mesmo processo para S1)
+    */
+
+    S0_int03 = S0_Matriz[S0_int03][S0_int12];
+    S1_int03 = S1_Matriz[S1_int03][S1_int12];
+    //printf("Valores pegos da matriz\nS0 -> %lu\n S1 -> %lu\n", S0_int03, S1_int03);
+
+    //transformando pra binario
+    if(S0_int03 == 0){
+        S0_2bits[0] = '0';
+        S0_2bits[1] = '0';
+    }
+    else{
+        int posicao = 0;
+        do{
+            S0_2bits[posicao++] = S0_int03%2 + '0';
+            S0_int03 /= 2;
+        }while(S0_int03 >= 0 && posicao <2);
+    }
+
+    if(S1_int03 == 0){
+        S1_2bits[0] = '0';
+        S1_2bits[1] = '0';
+    }
+    else{
+        int posicao = 0;
+        do{
+            S1_2bits[posicao++] = S1_int03%2 + '0';
+            S1_int03 /= 2;
+        }while(S1_int03 >= 0 && posicao <2);
+    }
+
+    //printf("S0_2bits -> %s\n", S0_2bits);
+    //printf("S1_2bits -> %s\n", S1_2bits);
+    reverteString(S0_2bits);
+    reverteString(S1_2bits);
+
+    //printf("Strings Revertidas\nS0 -> %s\nS1 -> %s\n", S0_2bits, S1_2bits);
+
+    //Montando e permutando P4
+    int P4[] = {2,4,3,1};
+    juncao(permutP4, S0_2bits, S1_2bits, 2);
+    permutP4 = Permutation(permutP4, P4, 4);
+    //printf("Permutacao P4 -> %s\n", permutP4);
+
+    //Xorando P4 com a esquerdinha original
+    ip4Xorado = getXorada(permutP4, separationEsq, 4);
+    //printf("IP4 xorado -> %s\n", ip4Xorado);
+    
+    
+    //Juntando com a direitinha original, só que invertendo
+    if(qualK == 1)
+       juncao(resultado, separationDir, ip4Xorado, 4);
+    else
+        juncao(resultado, ip4Xorado, separationDir, 4);
+
+    //printf("Junção -> %s\n", resultado);
+    
+    return resultado;
 
 }
 
+void dcript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buffer[]){
+    int IP1[] = {4,1,3,5,7,2,8,6};
 
+    int qtdOP; // quantidade de operacoes
+    char OP_CD; // operacao Cifrar ou Decifrar
+    char *K1;
+    char *K2;
+    char retorno[8];
+    unsigned char *resultado;
+    resultado = (unsigned char*)malloc(sizeof(unsigned char)*8);
+    char output[8];
 
-void separacao8(char R[9], char R_esq[5], char R_dir[5])
+    K1 = (char*)malloc(sizeof(char)*8);
+    K2 = (char*)malloc(sizeof(char)*8);
+    
+    getSubKeys(chave_K, K1, K2);
+    resultado = getResult(seq_bits, K2, 1);
+    resultado = getResult(resultado, K1, 2);
+    resultado = Permutation(resultado, IP1, 8);
+    strcpy(buffer, resultado);
 
-{
+    int i = 0;
+    for(i=0;i<8;i++)
+        output[i] = resultado[i];
+
+    printf("\nRESULTADO DECRIPT LADO .C - > %s\n", output);
+    // FILE *arquivo;
+    // arquivo = fopen("chatLOG.txt", "a");
+    // fprintf(arquivo,"%s\n", output);
+    // fclose(arquivo);
+    
+}
+
+char* cript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buffer[]){
+    int IP1[] = {4,1,3,5,7,2,8,6};
+
+    int qtdOP; // quantidade de operacoes
+    char OP_CD; // operacao Cifrar ou Decifrar
+    char *K1;
+    char *K2;
+    char retorno[8];
+    unsigned char *resultado;
+    resultado = (unsigned char*)malloc(sizeof(unsigned char)*8);
+    char output[8];
+
+    K1 = (char*)malloc(sizeof(char)*8);
+    K2 = (char*)malloc(sizeof(char)*8);
+
+    getSubKeys(chave_K, K1, K2);
+    resultado = getResult(seq_bits, K1, 1);
+    resultado = getResult(resultado, K2, 2);
+    resultado = Permutation(resultado, IP1, 8);
+    strcpy(buffer, resultado);
+
+    int i = 0;
+    for(i=0;i<8;i++)
+        output[i] = resultado[i];
+
+    FILE *arquivo;
+    arquivo = fopen("chatLOG.txt", "a");
+    fprintf(arquivo,"%s\n", output);
+    fclose(arquivo);
+
+    
+}
+
+int main(int argv, char **argc){
+
+    int IP1[] = {4,1,3,5,7,2,8,6};
+
+    int qtdOP; // quantidade de operacoes
+    char OP_CD; // operacao Cifrar ou Decifrar
+
+    char *chave_K;
+    char *seq_bits;
+
+    char *K1;
+    char *K2;
+
+    char *resultado;
+    resultado = (char*)malloc(sizeof(char)*8);
+
+    K1 = (char*)malloc(sizeof(char)*8);
+    K2 = (char*)malloc(sizeof(char)*8);
+    chave_K = (char*)malloc(sizeof(char)*10);
+    seq_bits = (char*)malloc(sizeof(char)*8);
+
+    scanf("%d", &qtdOP);
 
     int i;
+    for(i=0;i<qtdOP;i++){
 
-    for (i = 0; i < 4; i++)
+        scanf(" %c", &OP_CD);
+        scanf(" %s", chave_K);
+        scanf(" %s", seq_bits);
 
-    {
+        //printf("%d\n%c\n%s\n%s\n", qtdOP, OP_CD, chave_K, seq_bits);
+        getSubKeys(chave_K, K1, K2);
+        if(OP_CD == 'C'){
+            
+            //printf("K1 : %s\n", K1);
+            //printf("K2 : %s\n", K2);
 
-        R_esq[i] = R[i];
+            //printf("===================RESULTADO=================\n");
+            //printf("===================K1=================\n");
+            resultado = getResult(seq_bits, K1, 1);
+            //printf("===================K2=================\n");
+            resultado = getResult(resultado, K2, 2);
+
+            resultado = Permutation(resultado, IP1, 8);
+            printf("%s\n",resultado); 
+        }
+
+        else if(OP_CD == 'D'){
+
+            //printf("K1 : %s\n", K1);
+            //printf("K2 : %s\n", K2);
+
+            //printf("===================RESULTADO=================\n");
+            //printf("===================K1=================\n");
+            resultado = getResult(seq_bits, K2, 1);
+            //printf("===================K2=================\n");
+            resultado = getResult(resultado, K1, 2);
+            resultado = Permutation(resultado, IP1, 8);
+            printf("%s\n",resultado); 
+        }
 
     }
 
-    for (i = 4; i < 8; i++)
-
-    {
-
-        R_dir[i - 4] = R[i];
-
-    }
-
-    R_esq[4] = '\0';
-
-    R_dir[4] = '\0';
-
+    return 0;
 }
-
-
-
-int bin_para_num(char a, char b)
-
-{
-
-    int valor = ((int)a - 48) * 2 + (int)b - 48;
-
-    return valor;
-
-}
-
-
-
-void num_para_bin(int valor, char ss0[3])
-
-{
-
-    if (valor == 0)
-
-    {
-
-        ss0[0] = '0';
-
-        ss0[1] = '0';
-
-    }
-
-    else if (valor == 1)
-
-    {
-
-        ss0[0] = '0';
-
-        ss0[1] = '1';
-
-    }
-
-    else if (valor == 2)
-
-    {
-
-        ss0[0] = '1';
-
-        ss0[1] = '0';
-
-    }
-
-    else if (valor == 3)
-
-    {
-
-        ss0[0] = '1';
-
-        ss0[1] = '1';
-
-    }
-
-}
-
-
-
-void matrizs0(char s[5], char ss0[3])
-
-{
-
-    int s0[4][4] = {
-
-        {1, 0, 3, 2},
-
-        {3, 2, 1, 0},
-
-        {0, 2, 1, 3},
-
-        {3, 1, 3, 2}};
-
-
-
-        int linha = bin_para_num(s[0], s[3]);
-
-        int col = bin_para_num(s[1], s[2]);
-
-        int valor = s0[linha][col];
-
-        num_para_bin(valor, ss0);
-
-        ss0[2] = '\0';
-
-    }
-
-
-
-    void matrizs1(char s[5], char ss0[3])
-
-    {
-
-        int s0[4][4] = {
-
-            {1, 1, 2, 3},
-
-            {2, 0, 1, 3},
-
-            {3, 0, 1, 0},
-
-            {2, 1, 0, 3}};
-
-
-
-            int linha = bin_para_num(s[0], s[3]);
-
-            int col = bin_para_num(s[1], s[2]);
-
-            int valor = s0[linha][col];
-
-            num_para_bin(valor, ss0);
-
-            ss0[2] = '\0';
-
-        }
-
-
-
-        void p4(char ss0[3], char ss1[3], char R[5])
-
-        {
-
-            R[0] = ss0[1];
-
-            R[1] = ss1[1];
-
-            R[2] = ss1[0];
-
-            R[3] = ss0[0];
-
-            R[4] = '\0';
-
-        }
-
-
-
-        void xor4(char p4[5], char B_esq[5], char B_dir[5])
-
-        {
-
-            int i;
-
-            for (i = 0; i < 4; i++)
-
-            {
-
-                B_dir[i] = ((int)p4[i] - 48) ^ (int)B_esq[i];
-
-            }
-
-            B_dir[4] = '\0';
-
-        }
-
-        void funcaofk(char B_esq[5], char B_dir[5], char K1[9])
-
-        {
-
-            char B_expandido[9], R[9], s0[5], s1[5], ss0[3], ss1[3], saidap4[5];
-
-        // printf("K: %s\n", K1);
-
-            ep(B_dir, B_expandido);
-
-        // printf("B_expandido: %s\n", B_expandido);
-
-            xor(B_expandido, K1, R);
-
-        // printf("XOR: %s\n", R);
-
-            separacao8(R, s0, s1);
-
-            matrizs0(s0, ss0);
-
-            matrizs1(s1, ss1);
-
-            p4(ss0, ss1, saidap4);
-
-            xor4(saidap4, B_esq, B_dir);
-
-        }
-
-
-
-        void ipreverso(char B[9], char B_esq[5], char B_dir[5])
-
-        {
-
-            B[0] = B_esq[3];
-
-            B[1] = B_esq[0];
-
-            B[2] = B_esq[2];
-
-            B[3] = B_dir[0];
-
-            B[4] = B_dir[2];
-
-            B[5] = B_esq[1];
-
-            B[6] = B_dir[3];
-
-            B[7] = B_dir[1];
-
-            B[8] = '\0';
-
-        }
-
-
-
-        void sw(char B_esq[5], char B_dir[5])
-
-        {
-
-            char aux[5];
-
-            strcpy(aux, B_esq);
-
-            strcpy(B_esq, B_dir);
-
-            strcpy(B_dir, aux);
-
-        }
-
-void def_chave(char K[12]){
-    char K_p10[11], K_esq[6], K_dir[6], K1[9], K2[9];
-
-}
-
-char *cript(char *K, char *B){
-    printf("\nChave: %s", K);
-    printf("\nBits: %s", B);
-    def_chave(K);
-    char K_p10[11], K_esq[6], K_dir[6], K1[9], K2[9];
-    char B_esq[5], B_dir[5], B_dir_original[5], B_esq_original[5], sw1[5], sw2[5];
-
-    p10(K_p10, K);
-
-    separacao(K_p10, K_esq, K_dir);
-
-    rotacaoLS1(K_esq);
-
-    rotacaoLS1(K_dir);
-
-    chaveP8(K_esq, K_dir, K1);
-
-    rotacaoLS2(K_esq);
-
-    rotacaoLS2(K_dir);
-
-    chaveP8(K_esq, K_dir, K2);
-
-    ip(B, B_esq, B_dir);
-
-    strcpy(B_dir_original, B_dir);
-
-    strcpy(B_esq_original, B_esq);
-
-    funcaofk(B_esq, B_dir, K1);
-
-    strcpy(sw1, B_dir);
-
-    funcaofk(B_dir_original, B_dir, K2);
-
-    ipreverso(B, B_dir, sw1);
-
-    printf("\n%s\n", B);
-    return(B);
-
-}
-
-int main()
-
-        {
-
-            int L;
-            printf("\nInsira a quantidade etc: ");
-            scanf("%d", &L);
-
-        // while ((getchar()) != '\n'); //This will consume the '\n' char
-
-
-
-            int i = 0, j;
-
-            char K[12], B[10], O;
-
-
-
-            while(i<L){
-                printf("\n insira a op: ");
-                scanf(" %c", &O);
-
-            //fgets(O, sizeof(O), stdin);
-                printf("\n insira a chave: ");
-                scanf(" %s", K);
-
-            //fgets(K, sizeof(K), stdin);
-                printf("\n insira os bin: ");
-                scanf(" %s", B);
-
-            //fgets(B, sizeof(B), stdin);
-
-                i++;
-
-                char K_p10[11], K_esq[6], K_dir[6], K1[9], K2[9];
-
-                p10(K_p10, K);
-
-                separacao(K_p10, K_esq, K_dir);
-
-                rotacaoLS1(K_esq);
-
-                rotacaoLS1(K_dir);
-
-                chaveP8(K_esq, K_dir, K1);
-
-                rotacaoLS2(K_esq);
-
-                rotacaoLS2(K_dir);
-
-                chaveP8(K_esq, K_dir, K2);
-
-
-
-                if (O=='C')
-
-                {
-
-                    char B_esq[5], B_dir[5], B_dir_original[5], B_esq_original[5], sw1[5], sw2[5];
-
-                    ip(B, B_esq, B_dir);
-
-                    strcpy(B_dir_original, B_dir);
-
-                    strcpy(B_esq_original, B_esq);
-
-                    funcaofk(B_esq, B_dir, K1);
-
-                    strcpy(sw1, B_dir);
-
-                    funcaofk(B_dir_original, B_dir, K2);
-
-                    ipreverso(B, B_dir, sw1);
-
-                    printf("%s\n", B);
-
-                }
-
-                else if (O=='D')
-
-                {
-
-                    char B_esq[5], B_dir[5], B_dir_original[5], B_esq_original[5], sw1[5], sw2[5];
-
-                    ip(B, B_esq, B_dir);
-
-                    strcpy(B_dir_original, B_dir);
-
-                    strcpy(B_esq_original, B_esq);
-
-                    funcaofk(B_esq, B_dir, K2);
-
-                    strcpy(sw1, B_dir);
-
-                    funcaofk(B_dir_original, B_dir, K1);
-
-                    ipreverso(B, B_dir, sw1);
-
-                    printf("%s\n", B);
-
-                }
-
-            }
-
-            return 0;
-
-        }
