@@ -2,113 +2,55 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <locale.h>
 
-void iniciaSint(int Sint[], int T[], char K[]){
+void iniciaSint(unsigned char S[], unsigned char T[], unsigned char K[]){
     int i;
     int k = strlen(K);
-    for(i=0;i<2000;i++){
-        Sint[i] = i;
+    for(i=0;i<256;i++){
+        S[i] = i;
         T[i] = K[i%k];
     }
 }
 
-void swap(int *Si, int *Sj){
-    int k = *Si;
-    *Si = *Sj;
-    *Sj = k;
+void swap(unsigned char Si, unsigned char Sj){
+    unsigned char k = Si;
+    Si = Sj;
+    Sj = k;
 }
 
-void cript2(char K[], char S[], unsigned char buffer[]){
-    int Sint[2000];
-    int T[2000];
-    unsigned char *output;//[2000];
-    output = (unsigned char*)malloc(sizeof(unsigned char)*2000);
-    int tamS = strlen(S);
+void cript(unsigned char *key_, unsigned char *plain_text, unsigned char *cifrado_, int size){
+    unsigned char S[256];
+    unsigned char T[256];
 
-    printf("descriptografando....\n");
+    printf("\ntexto CHEGOU -> %s\n",plain_text);
 
-    iniciaSint(Sint, T, K);
+    iniciaSint(&S, &T, key_);
+    
     int i , j, k, t, l;
     j = 0;
-    for(i=0;i<2000;i++){
-        j =(j+Sint[i]+T[i])%2000;
-        swap(&Sint[i], &Sint[j]);
+    for(i=0;i<256;i++){ 
+        j =(j+S[i]+T[i])%256;
+        swap(S[i], S[j]);
     }
     
     i = j = 0;
     l = k = t = 0;
+    while(l < size){
 
-    while(l < 2000){
-        i = (i+1)%2000;
-        j = (j+Sint[i])%2000;
-        swap(&Sint[i], &Sint[j]);
-
-        t = (Sint[i]+Sint[j])%2000;
-        k = Sint[t];
-        output[l] = S[l]^k;
+        i = (i+1)%256;
+        j = (j+S[i])%256;
+        swap(S[i], S[j]);
+        t = (S[i]+S[j])%256;
+        k = S[t];
+        cifrado_[l] = plain_text[l]^k;
         l++;
     }
 
-    // for(i=0;i<tamS;i++)
-    //     buffer[i] = output[i];
+    //printf("\n texto SAIU -> %s", cifrado_);
 
-    //strcpy(buffer, output);
-    printf("%s\n", buffer);
-    
-    FILE *arquivo;
-    arquivo = fopen("chatLOG.txt", "a");
-    for(i=0;i<tamS;i++){
-        fprintf(arquivo, "%02x:",output[i]);
-    }
-    fprintf(arquivo, "%s", "\n");
-    fclose(arquivo);
-}
+    // printf("\n");
 
-void cript(char K[], char S[], unsigned char buffer[]){
-    int Sint[2000];
-    int T[2000];
-    unsigned char *output;//[2000];
-    output = (unsigned char*)malloc(sizeof(unsigned char)*2000);
-    int tamS = strlen(S);
-
-    iniciaSint(Sint, T, K);
-    int i , j, k, t, l;
-    j = 0;
-    for(i=0;i<2000;i++){
-        j =(j+Sint[i]+T[i])%2000;
-        swap(&Sint[i], &Sint[j]);
-    }
-    
-    i = j = 0;
-    l = k = t = 0;
-
-    while(l < 2000){
-        i = (i+1)%2000;
-        j = (j+Sint[i])%2000;
-        swap(&Sint[i], &Sint[j]);
-
-        t = (Sint[i]+Sint[j])%2000;
-        k = Sint[t];
-        output[l] = S[l]^k;
-        l++;
-    }
-
-    // for(i=0;i<tamS;i++)
-    //     buffer[i] = output[i];
-
-    strcpy(buffer, output);
-    
-    printf("%s\n", buffer);
-    
-    FILE *arquivo;
-    arquivo = fopen("chatLOG.txt", "a");
-    for(i=0;i<tamS;i++){
-        fprintf(arquivo, "%02x:",output[i]);
-    }
-    fprintf(arquivo, "%s", "\n");
-    fclose(arquivo);
-
-    cript2(K, buffer, buffer);
 }
 
 

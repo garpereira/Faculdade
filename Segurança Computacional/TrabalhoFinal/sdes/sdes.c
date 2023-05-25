@@ -310,6 +310,8 @@ void dcript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     K1 = (char*)malloc(sizeof(char)*8);
     K2 = (char*)malloc(sizeof(char)*8);
     
+
+    //printf("\nMSG CRIPTO LADO .C -> %s\n", seq_bits);
     getSubKeys(chave_K, K1, K2);
     resultado = getResult(seq_bits, K2, 1);
     resultado = getResult(resultado, K1, 2);
@@ -320,7 +322,7 @@ void dcript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     for(i=0;i<8;i++)
         output[i] = resultado[i];
 
-    printf("\nRESULTADO DECRIPT LADO .C - > %s\n", output);
+    //printf("RESULTADO DECRIPT LADO .C - > %s\n", output);
     // FILE *arquivo;
     // arquivo = fopen("chatLOG.txt", "a");
     // fprintf(arquivo,"%s\n", output);
@@ -357,7 +359,6 @@ char* cript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     arquivo = fopen("chatLOG.txt", "a");
     fprintf(arquivo,"%s\n", output);
     fclose(arquivo);
-
     
 }
 

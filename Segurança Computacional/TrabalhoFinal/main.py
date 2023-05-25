@@ -1,3 +1,5 @@
+from rc4 import RC4
+
 import sys
 import os
 import getpass
@@ -8,8 +10,6 @@ from PyQt5.QtGui import *
 from PyQt5 import *
 from ctypes import *
 import ctypes
-
-#import sdes
 
 class mainWindow(QMainWindow):
 
@@ -48,6 +48,14 @@ class mainWindow(QMainWindow):
 
         self.text_MSGCHAT = QTextEdit(self)
         self.text_MSGCHAT.setGeometry(10, 110, 380, 400)
+        self.text_MSGCHAT.setReadOnly(True)
+
+        # Adicionar sombra nas bordas
+        shadow_effect = QGraphicsDropShadowEffect()
+        shadow_effect.setBlurRadius(5)  # Definir o raio de desfoque da sombra
+        shadow_effect.setColor(QColor(0, 0, 0, 150))  # Definir a cor da sombra
+        shadow_effect.setOffset(0, 0)  # Definir o deslocamento da sombra
+        self.text_MSGCHAT.setGraphicsEffect(shadow_effect)
         
         scrollbar = QScrollBar(self)
         scrollbar.setGeometry(380, 200, 20, 300)
@@ -119,12 +127,20 @@ class mainWindow(QMainWindow):
             resultado = subprocess.run(comandos[i], capture_output=True, text=True)
             self.printaERRO(resultado)
             os.chdir(original_path)
+
         try:
             self.so_des = "./sdes/sdes.so"
             self.sdes_functions = CDLL(self.so_des)
 
             self.so_rc4 = "./rc4/rc4.so"
             self.rc4_functions = CDLL(self.so_rc4)
+            self.rc4_functions.argtypes = [
+                c_char_p,  # key
+                c_char_p,  # plaintext
+                ctypes.POINTER(ctypes.c_ubyte), # ciphertext
+                ctypes.c_int
+            ]
+            self.rc4_functions.restype = None
 
         except:
             print("deu ruim padrin")
@@ -133,6 +149,20 @@ class mainWindow(QMainWindow):
     def conectar(self):
         pass
     
+    def encripta_RC4(self, chave_, mensagem):
+        tamMsg = len(mensagem)
+        cifrado_ = (ctypes.c_ubyte * tamMsg)()
+        self.rc4_functions.cript(chave_.encode(), mensagem.encode(), cifrado_, tamMsg)
+        return bytes(cifrado_)
+    
+    def decripta_RC4(self, chave_, mensagem):
+        cifrado_ = bytes.fromhex(mensagem)
+        tamMsg = len(mensagem)
+        decifrado_ = (ctypes.c_ubyte * tamMsg)()
+        decifrado_ = self.rc4_functions.cript(chave_, cifrado_, decifrado_, tamMsg)
+        decifrado_ = bytes(decifrado_)
+        return decifrado_
+
     def abrirLOG(self):
         self.chatLOG = open("chatLOG.txt", "r", encoding='utf-8')
     
@@ -158,26 +188,23 @@ class mainWindow(QMainWindow):
         if opt_Algoritmo == 'SDES':
             buffer = create_string_buffer(8)
             self.sdes_functions.cript(chave_.encode(), mensagem.encode(), buffer)
+            msgCriptSDES = str(buffer.value.decode())
+
+        if opt_Algoritmo == 'RC4':
+            #cifrado_ = self.encripta_RC4(chave_, mensagem).hex()
+            msgCriptRC4 = RC4(chave_.encode(), mensagem.encode())
         
-        elif opt_Algoritmo == 'RC4':
-            buffer = create_string_buffer(2000)
-            self.rc4_functions.cript(chave_.encode(), mensagem.encode(), buffer)
-
-        mensagem = buffer.value.decode('latin-1')
-        #print(mensagem)
-
-        #self.abrirLOG()
-        #mensagem = self.chatLOG.readlines()
-        #self.fecharLOG()
-        #mensagem = str(mensagem[-1])#.replace('\n', '')
-        #mensagem = mensagem[:-2]
-
         #só pra ver o dcript
         if opt_Algoritmo == 'SDES':
-            self.sdes_functions.dcript(chave_.encode(), mensagem.encode(), buffer)
+            print(f'MsgCriptSDES Python -> {msgCriptSDES}\n')
+            self.sdes_functions.dcript(chave_.encode(), msgCriptSDES.encode(), buffer)
+            msgDcriptSDES = buffer.value.decode()
+            print(f'MsgDCriptSDES Python -> {msgDcriptSDES}\n')
 
-        elif opt_Algoritmo == 'RC4':
-            self.rc4_functions.cript(chave_.encode(), mensagem.encode(), buffer)
+        if opt_Algoritmo == 'RC4':
+            print(f'MsgCriptRC4 Python -> {msgCriptRC4}\n')
+            msgDCriptRC4 = RC4(chave_.encode(), msgCriptRC4).decode()
+            print(f'MsgDCriptRC4 Python -> {msgDCriptRC4}\n')
 
         if identidade == 'servidor':
             cor = QColor(255, 0 ,0)
