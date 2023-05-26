@@ -10,10 +10,9 @@ from PyQt5.QtGui import *
 from PyQt5 import *
 from ctypes import *
 import ctypes
+import socket
 
 class mainWindow(QMainWindow):
-
-    chave_rc4 = 'teste'
 
     __instancia__: None
 
@@ -24,30 +23,66 @@ class mainWindow(QMainWindow):
         y = (screen_geo.height() - self.height()) / 2
 
         self.setGeometry(x, y, 400, 600) #posicao x, y, largura, altura
-        self.setWindowTitle('CHATZAO DOS CRIA')
+        self.setWindowTitle('Telegram da DeepWeb')
+        icone = QIcon('./tuiterr.png')
+        self.setWindowIcon(icone)
 
+        # Pegando o IP LOCAL
+        self.MyHN = socket.gethostname()
+        self.MyIP = socket.gethostbyname(self.MyHN)
+
+        # Compilando os Codigos C
         self.compilaCodigos()
 
+        # Campo de IP ORIGEM
+        self.seu_IP_label = QLabel(self)
+        self.seu_IP_label.setText('IP Origem')
+        self.seu_IP_label.setGeometry(10, 38, 120, 20)
+        self.seu_IP_label.setAlignment(Qt.AlignCenter)
+        font = QFont()
+        font.setPointSize(7)
+        self.seu_IP_label.setFont(font)
+
+        self.local_IP = QLineEdit(self)
+        self.local_IP.setPlaceholderText(str(self.MyIP))
+        self.local_IP.setGeometry(10, 10, 120, 30)
+        self.local_IP.setReadOnly(True)
+
+        # Campo de IP DESTINO
         self.text_IP = QLineEdit(self)
         self.text_IP.setPlaceholderText('Digite o IP Destino')
-        self.text_IP.setGeometry(10, 10, 280, 30)
+        self.text_IP.setGeometry(170, 10, 120, 30)
+        #self.text_IP.textChanged.connect()
 
+        # Botão Conectar
         self.btn_Conectar = QPushButton('Conectar', self)
         self.btn_Conectar.setGeometry(290, 10, 100, 30)
         
+        # Campo de CHAVE CRIPTOGRAFADORA
         self.text_KEY = QLineEdit(self)
         self.text_KEY.setPlaceholderText('Digite a Chave Cripto')
         self.text_KEY.setGeometry(10, 70, 280, 30)
         self.text_KEY.setMaxLength(10)
         self.text_KEY.setValidator(QIntValidator(self))
 
+        # Caixa de Seleção do Algoritmo
         self.opt_ALGORITHMS = QComboBox(self)
         self.opt_ALGORITHMS.addItems(['SDES', 'RC4'])
         self.opt_ALGORITHMS.setGeometry(290, 70, 100, 30)
         self.opt_ALGORITHMS.currentIndexChanged.connect(lambda: self.updateTypeKEY(self.opt_ALGORITHMS.currentText()))
 
+        # Titulo do Chat
+        self.text_MSGCHAT_LABEL = QLabel(self)
+        self.text_MSGCHAT_LABEL.setText('BATE PAPO UOL')
+        self.text_MSGCHAT_LABEL.setGeometry(10, 110, 380, 30)
+        self.text_MSGCHAT_LABEL.setAlignment(Qt.AlignCenter)
+        font = QFont()
+        font.setPointSize(15)
+        self.text_MSGCHAT_LABEL.setFont(font)
+
+        # Chat 1
         self.text_MSGCHAT = QTextEdit(self)
-        self.text_MSGCHAT.setGeometry(10, 110, 380, 400)
+        self.text_MSGCHAT.setGeometry(10, 140, 380, 170)
         self.text_MSGCHAT.setReadOnly(True)
 
         # Adicionar sombra nas bordas
@@ -61,15 +96,42 @@ class mainWindow(QMainWindow):
         scrollbar.setGeometry(380, 200, 20, 300)
         self.text_MSGCHAT.setVerticalScrollBar(scrollbar)
 
+        # Titulo do Chat 2
+        self.text_MSGCHAT_LABEL = QLabel(self)
+        self.text_MSGCHAT_LABEL.setText('CRIPTOGRAFADO')
+        self.text_MSGCHAT_LABEL.setGeometry(10, 330, 380, 30)
+        self.text_MSGCHAT_LABEL.setAlignment(Qt.AlignCenter)
+        font = QFont()
+        font.setPointSize(15)
+        self.text_MSGCHAT_LABEL.setFont(font)
+
+        # Chat 2
+        self.text_MSGCHAT_CRIPTO = QTextEdit(self)
+        self.text_MSGCHAT_CRIPTO.setGeometry(10, 360, 380, 170)
+        self.text_MSGCHAT_CRIPTO.setReadOnly(True)
+
+        # Adicionar sombra nas bordas
+        shadow_effect = QGraphicsDropShadowEffect()
+        shadow_effect.setBlurRadius(5)  # Definir o raio de desfoque da sombra
+        shadow_effect.setColor(QColor(0, 0, 0, 150))  # Definir a cor da sombra
+        shadow_effect.setOffset(0, 0)  # Definir o deslocamento da sombra
+        self.text_MSGCHAT_CRIPTO.setGraphicsEffect(shadow_effect)
+        
+        scrollbar = QScrollBar(self)
+        scrollbar.setGeometry(380, 200, 20, 300)
+        self.text_MSGCHAT_CRIPTO.setVerticalScrollBar(scrollbar)
+
+        # Campo de enviar a mensagem
         self.text_MSG = QLineEdit(self)
         self.text_MSG.setPlaceholderText('Escreva sua mensagem')
-        self.text_MSG.setGeometry(10, 540, 280, 30)
+        self.text_MSG.setGeometry(10, 550, 280, 30)
         self.text_MSG.installEventFilter(self)
         self.text_MSG.setValidator(QIntValidator(self))
         self.text_MSG.setMaxLength(8)
 
+        # Botão Enviar mensagem
         self.btn_Enviar = QPushButton('Enviar', self)
-        self.btn_Enviar.setGeometry(290, 540, 100, 30)
+        self.btn_Enviar.setGeometry(290, 550, 100, 30)
         self.btn_Enviar.clicked.connect(lambda: self.enviar_mensagem('servidor', self.opt_ALGORITHMS.currentText()))
 
     def eventFilter(self, obj, event):
@@ -79,7 +141,6 @@ class mainWindow(QMainWindow):
                 return True
             return False
         return False
-    
 
     def updateTypeKEY(self, OPT):
 
@@ -188,23 +249,23 @@ class mainWindow(QMainWindow):
         if opt_Algoritmo == 'SDES':
             buffer = create_string_buffer(8)
             self.sdes_functions.cript(chave_.encode(), mensagem.encode(), buffer)
-            msgCriptSDES = str(buffer.value.decode())
+            mensagem_cripto = str(buffer.value.decode())
 
         if opt_Algoritmo == 'RC4':
             #cifrado_ = self.encripta_RC4(chave_, mensagem).hex()
-            msgCriptRC4 = RC4(chave_.encode(), mensagem.encode())
+            mensagem_cripto = RC4(chave_.encode(), mensagem.encode())
         
         #só pra ver o dcript
         if opt_Algoritmo == 'SDES':
-            print(f'MsgCriptSDES Python -> {msgCriptSDES}\n')
-            self.sdes_functions.dcript(chave_.encode(), msgCriptSDES.encode(), buffer)
-            msgDcriptSDES = buffer.value.decode()
-            print(f'MsgDCriptSDES Python -> {msgDcriptSDES}\n')
+            print(f'MsgCriptSDES Python -> {mensagem_cripto}\n')
+            self.sdes_functions.dcript(chave_.encode(), mensagem_cripto.encode(), buffer)
+            mensagem_criptoD = buffer.value.decode()
+            print(f'MsgDCriptSDES Python -> {mensagem_cripto}\n')
 
         if opt_Algoritmo == 'RC4':
-            print(f'MsgCriptRC4 Python -> {msgCriptRC4}\n')
-            msgDCriptRC4 = RC4(chave_.encode(), msgCriptRC4).decode()
-            print(f'MsgDCriptRC4 Python -> {msgDCriptRC4}\n')
+            print(f'MsgCriptRC4 Python -> {mensagem_cripto}\n')
+            mensagem_criptoD = RC4(chave_.encode(), mensagem_cripto).decode()
+            print(f'MsgDCriptRC4 Python -> {mensagem_cripto}\n')
 
         if identidade == 'servidor':
             cor = QColor(255, 0 ,0)
@@ -219,6 +280,10 @@ class mainWindow(QMainWindow):
         user = getpass.getuser()
         self.text_MSGCHAT.setCurrentCharFormat(formato)
         self.text_MSGCHAT.append('<'+str(user)+'>: '+ str(mensagem))
+
+        self.text_MSGCHAT_CRIPTO.setCurrentCharFormat(formato)
+        self.text_MSGCHAT_CRIPTO.append('<'+str(user)+'>: '+ str(mensagem_cripto))
+
         self.text_MSG.clear()
 
     def get_instancia(cls):
