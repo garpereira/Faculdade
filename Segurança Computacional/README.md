@@ -22,19 +22,19 @@ pip install to-requirements.txt
 1. Clone o repositório do projeto:
 
 ```
-git clone https://github.com/seu-usuario/nome-do-repositorio.git
+git clone https://github.com/garpereira/Faculdade.git
 ```
 
 2. Navegue até o diretório do projeto:
 
 ```
-cd nome-do-repositorio
+cd Segurança Computacional/TrabalhoFinal
 ```
 
 3. Execute o aplicativo:
 
 ```
-python chat_app.py
+python main.py
 ```
 
 4. O aplicativo de chat será iniciado. Insira o endereço IP do destinatário e clique no botão "Conectar".
