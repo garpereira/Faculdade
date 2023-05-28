@@ -321,12 +321,6 @@ void dcript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     int i = 0;
     for(i=0;i<8;i++)
         output[i] = resultado[i];
-
-    //printf("RESULTADO DECRIPT LADO .C - > %s\n", output);
-    // FILE *arquivo;
-    // arquivo = fopen("chatLOG.txt", "a");
-    // fprintf(arquivo,"%s\n", output);
-    // fclose(arquivo);
     
 }
 
@@ -355,10 +349,10 @@ char* cript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     for(i=0;i<8;i++)
         output[i] = resultado[i];
 
-    FILE *arquivo;
-    arquivo = fopen("chatLOG.txt", "a");
-    fprintf(arquivo,"%s\n", output);
-    fclose(arquivo);
+    // FILE *arquivo;
+    // arquivo = fopen("chatLOG.txt", "a");
+    // fprintf(arquivo,"%s\n", output);
+    // fclose(arquivo);
     
 }
 
