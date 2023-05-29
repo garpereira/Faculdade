@@ -183,23 +183,32 @@ class mainWindow(QMainWindow):
         print("Servidor iniciado e aguardando conexões...")
 
     def handle_connection(self):
-        client_socket = self.Servidor.nextPendingConnection()
-        client_socket.readyRead.connect(lambda: self.receive_message(client_socket))
-        client_socket.disconnected.connect(lambda: self.disconnect_client(client_socket))
+        try:
+            print("entrou no try do handle")
+            self.client_socket = self.Servidor.nextPendingConnection()
+            self.client_socket.readyRead.connect(lambda: self.receive_message(self.client_socket))
+            self.client_socket.disconnected.connect(lambda: self.disconnect_client(self.client_socket))
+        except:
+            print("pulou pro except do handle")
+            #self.client_socket
+            self.client_socket.readyRead.connect(lambda: self.receive_message(self.client_socket))
+            self.client_socket.disconnected.connect(lambda: self.disconnect_client(self.client_socket))
 
-        print("Novo cliente conectado:", client_socket.peerAddress().toString())
+        print("Novo cliente conectado:", self.client_socket.peerAddress().toString())
 
     def receive_message(self, client_socket):
+        print("entrou no receive_message")
         message = client_socket.readAll().data()
         print("Mensagem recebida de", client_socket.peerAddress().toString(), ":", message)
 
         # Mensagem recebida, entao vai Decriptar
         self.decripta_GLOBAL(self.text_KEY.text(), message, client_socket.peerAddress().toString(), self.opt_ALGORITHMS.currentText())
-        
+        print("decriptou depois que recebeu no servidor")
+
         # Envie a mensagem para todos os outros clientes conectados
-        for client in self.Servidor.children():
-           if isinstance(client, QAbstractSocket) and client != client_socket:
-               client.write(message.encode())
+        #for client in self.Servidor.children():
+        #   if isinstance(client, QAbstractSocket) and client != client_socket:
+        #       client.write(message.encode())
 
     def disconnect_client(self, client_socket):
         print("Cliente desconectado:", client_socket.peerAddress().toString())
@@ -337,6 +346,8 @@ class mainWindow(QMainWindow):
         G = randint(0, 255)
         B = randint(0, 255)
 
+        print("veio pra enviar pro chat")
+        
         if cliente_ip not in self.msgColors:
             self.msgColors[cliente_ip] = QColor(R,G,B)
 
