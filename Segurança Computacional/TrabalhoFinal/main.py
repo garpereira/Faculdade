@@ -14,6 +14,7 @@ import ctypes
 import socket
 from random import randint
 
+
 class Validator(QRegExpValidator):
     def __init__(self, pattern):
         super().__init__(QRegExp(f"[{pattern}]+"))
@@ -35,7 +36,6 @@ class mainWindow(QMainWindow):
         self.setWindowIcon(icone)
 
         # Pegando o IP LOCAL
-        #self.MyHN = socket.gethostname()
         self.MyIP = self.get_local_ip()
 
         # Objeto Servidor
@@ -70,7 +70,6 @@ class mainWindow(QMainWindow):
         self.text_IP = QLineEdit(self)
         self.text_IP.setPlaceholderText('Digite o IP Destino')
         self.text_IP.setGeometry(10, 60, 120, 30)
-        #self.text_IP.textChanged.connect()
 
         # Campo de PORTA SERVIDOR DESTINO
         self.text_PORT_Destino = QLineEdit(self)
@@ -96,16 +95,12 @@ class mainWindow(QMainWindow):
         self.text_KEY = QLineEdit(self)
         self.text_KEY.setPlaceholderText('Digite a Chave Cripto')
         self.text_KEY.setGeometry(10, 110, 275, 30)
-        #self.text_KEY.setMaxLength(10)
-        #self.text_KEY.setValidator(QIntValidator(self))
 
         # Caixa de Seleção do Algoritmo
         self.opt_ALGORITHMS = QComboBox(self)
         self.opt_ALGORITHMS.addItems(['RC4', 'SDES'])
         self.opt_ALGORITHMS.setGeometry(290, 110, 100, 30)
         self.opt_ALGORITHMS.currentIndexChanged.connect(self.updateTypeKEY)
-        #default_index = self.opt_ALGORITHMS.findText('RC4')
-        #self.opt_ALGORITHMS.setCurrentIndex(default_index)
 
         # Titulo do Chat
         self.text_MSGCHAT_LABEL = QLabel(self)
@@ -162,8 +157,6 @@ class mainWindow(QMainWindow):
         self.text_MSG.setPlaceholderText('Escreva sua mensagem')
         self.text_MSG.setGeometry(10, 520, 275, 30)
         self.text_MSG.installEventFilter(self)
-        #self.text_MSG.setValidator(QIntValidator(self))
-        #self.text_MSG.setMaxLength(8)
 
         # Botão Enviar mensagem
         self.btn_Enviar = QPushButton('Enviar', self)
@@ -184,36 +177,26 @@ class mainWindow(QMainWindow):
 
     def handle_connection(self):
         try:
-            print("entrou no try do handle")
             self.client_socket = self.Servidor.nextPendingConnection()
             self.client_socket.readyRead.connect(lambda: self.receive_message(self.client_socket))
             self.client_socket.disconnected.connect(lambda: self.disconnect_client(self.client_socket))
+
         except:
-            print("pulou pro except do handle")
-            #self.client_socket
             self.client_socket.readyRead.connect(lambda: self.receive_message(self.client_socket))
             self.client_socket.disconnected.connect(lambda: self.disconnect_client(self.client_socket))
 
         print("Novo cliente conectado:", self.client_socket.peerAddress().toString())
 
     def receive_message(self, client_socket):
-        print("entrou no receive_message")
         message = client_socket.readAll().data()
         print("Mensagem recebida de", client_socket.peerAddress().toString(), ":", message)
 
         # Mensagem recebida, entao vai Decriptar
         self.decripta_GLOBAL(self.text_KEY.text(), message, client_socket.peerAddress().toString(), self.opt_ALGORITHMS.currentText())
-        print("decriptou depois que recebeu no servidor")
-
-        # Envie a mensagem para todos os outros clientes conectados
-        #for client in self.Servidor.children():
-        #   if isinstance(client, QAbstractSocket) and client != client_socket:
-        #       client.write(message.encode())
 
     def disconnect_client(self, client_socket):
         print("Cliente desconectado:", client_socket.peerAddress().toString())
         client_socket.deleteLater()
-
 
 # CLIENTE
 ####################################
@@ -241,26 +224,15 @@ class mainWindow(QMainWindow):
 
     def updateTypeKEY(self):
         OPT = self.opt_ALGORITHMS.currentText()
-        #regex3 = QRegExp("^[01]+")
-        #validador3 = QRegExpValidator(regex3, self)
-        #validator = QRegularExpressionValidator("[01]+")
 
         if OPT == 'SDES':
-            print("mudou pra SDES")
-            # default_index = self.opt_ALGORITHMS.findText('SDES')
-            # self.opt_ALGORITHMS.setCurrentIndex(default_index)
             self.text_KEY.clear()
             self.text_KEY.setValidator(Validator("01"))
             self.text_KEY.setMaxLength(10)
 
             self.text_MSG.clear()
-            self.text_MSG.setValidator(Validator("01"))
-            self.text_MSG.setMaxLength(8)
             
         elif OPT == 'RC4':
-            print("mudou pra RC4")
-            # default_index = self.opt_ALGORITHMS.findText('RC4')
-            # self.opt_ALGORITHMS.setCurrentIndex(default_index)
             self.text_KEY.clear()
             self.text_KEY.setValidator(None)
             self.text_KEY.setMaxLength(256)
@@ -326,18 +298,19 @@ class mainWindow(QMainWindow):
 
     def decripta_GLOBAL(self, chave_, mensagem_cripto, cliente_ip, opt_algoritmo):
         if opt_algoritmo == 'SDES':
-            print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
-            buffer = create_string_buffer(8)
-            self.sdes_functions.dcript(chave_.encode(), mensagem_cripto, buffer)
-            mensagem_dcripto = buffer.value.decode()
-            print(f'MsgDCriptSDES Python -> {mensagem_dcripto}\n')
+            mensagem_dcripto = ""
+            print(type(mensagem_cripto))
+            #print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
+            for i in range(0, len(mensagem_cripto), 8):
+                buffer = create_string_buffer(8)
+                msg_slice = mensagem_cripto[i:i+8]
+                print(msg_slice)
+                self.sdes_functions.dcript(chave_.encode(), bytes(msg_slice), buffer)
+                mensagem_dcripto += chr(int(buffer.value.decode('latin-1'),2))
             self.envia_mensagemCHAT(mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
 
         if opt_algoritmo == 'RC4':
-            #mensagem_cripto = ":".join(mensagem_cripto.hex()[i:i+2] for i in range(0, len(mensagem_cripto.hex()), 2))
-            print(f'MsgCriptRC4 Python -> {mensagem_cripto.hex()}\n')
             mensagem_dcripto = RC4(chave_.encode(), mensagem_cripto).decode()
-            print(f'MsgDCriptRC4 Python -> {mensagem_dcripto}\n')
             self.envia_mensagemCHAT(mensagem_cripto.hex(), mensagem_dcripto, cliente_ip)
             
 
@@ -345,8 +318,6 @@ class mainWindow(QMainWindow):
         R = randint(0, 255)
         G = randint(0, 255)
         B = randint(0, 255)
-
-        print("veio pra enviar pro chat")
         
         if cliente_ip not in self.msgColors:
             self.msgColors[cliente_ip] = QColor(R,G,B)
@@ -355,7 +326,6 @@ class mainWindow(QMainWindow):
         formato.setForeground(self.msgColors[cliente_ip])
         formato.setFontWeight(QFont.Bold)
 
-        #user = getpass.getuser()
         self.text_MSGCHAT.setCurrentCharFormat(formato)
         self.text_MSGCHAT.append('<'+str(cliente_ip)+'>: '+ str(mensagem_dcripto))
 
@@ -393,18 +363,29 @@ class mainWindow(QMainWindow):
             return
 
         if opt_Algoritmo == 'SDES':
-            print(mensagem, chave_)
-            buffer = create_string_buffer(8)
-            self.sdes_functions.cript(chave_.encode(), mensagem.encode(), buffer)
-            mensagem_cripto = bytes(buffer.value)
-            self.envia_mensagemCHAT(str(buffer.value.decode()), mensagem, self.local_IP.text())
+            mensagem_cripto = ""
+            buffer = [create_string_buffer(8) for i in range(len(mensagem))] # buffer de 8 bits pra cada letra
+
+            for i in range(len(mensagem)):
+                letra = bin(ord(mensagem[i])).replace("b", "")
+                if len(letra) < 8:
+                    letra = "0"*(8-len(letra)) + letra
+                self.sdes_functions.cript(chave_.encode(), letra.encode('latin-1'), buffer[i])
+                letra = str(bytes(buffer[i].value)).replace("b","").replace("'","")
+                mensagem_cripto += letra
+                
+            temp = ""
+            for i in range(len(buffer)):
+                temp += str(buffer[i].value.decode())
+        
+            self.envia_mensagemCHAT(temp, mensagem, self.local_IP.text())
 
 
         elif opt_Algoritmo == 'RC4':
             mensagem_cripto = RC4(chave_.encode(), mensagem.encode())
             self.envia_mensagemCHAT(mensagem_cripto.hex(), mensagem, self.local_IP.text())
 
-        self.Cliente.write(mensagem_cripto)
+        self.Cliente.write(mensagem_cripto.encode('latin-1'))
 
         self.text_MSG.clear()
 
