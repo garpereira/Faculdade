@@ -27,10 +27,10 @@ class mainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         screen_geo = QDesktopWidget().availableGeometry()
-        x = (screen_geo.width() - self.width()) / 2
-        y = (screen_geo.height() - self.height()) / 2
+        x = int((screen_geo.width() - self.width()) / 2)
+        y = int((screen_geo.height() - self.height()) / 2)
 
-        self.setGeometry(x, y, 400, 600) #posicao x, y, largura, altura
+        self.setGeometry(x, y, 400, 600)  # posicao x, y, largura, altura
         self.setWindowTitle('Telegram da DeepWeb')
         icone = QIcon('./tuiterr.png')
         self.setWindowIcon(icone)
@@ -79,18 +79,18 @@ class mainWindow(QMainWindow):
         # Botão Conectar Cliente
         self.btn_Conectar = QPushButton('Conectar', self)
         self.btn_Conectar.setGeometry(290, 60, 100, 30)
-        self.btn_Conectar.clicked.connect(lambda : self.conectar())
+        self.btn_Conectar.clicked.connect(lambda: self.conectar())
 
         # Botão Ligar Servidor
         self.btn_LigarServidor = QPushButton('Ligar Servidor', self)
         self.btn_LigarServidor.setGeometry(290, 10, 100, 30)
-        self.btn_LigarServidor.clicked.connect(lambda : self.start())
+        self.btn_LigarServidor.clicked.connect(lambda: self.start())
 
         # Campo de PORTA SERVIDOR
         self.text_PORT_Local = QLineEdit(self)
         self.text_PORT_Local.setPlaceholderText("Porta Local")
         self.text_PORT_Local.setGeometry(135, 10, 85, 30)
-        
+
         # Campo de CHAVE CRIPTOGRAFADORA
         self.text_KEY = QLineEdit(self)
         self.text_KEY.setPlaceholderText('Digite a Chave Cripto')
@@ -98,7 +98,7 @@ class mainWindow(QMainWindow):
 
         # Caixa de Seleção do Algoritmo
         self.opt_ALGORITHMS = QComboBox(self)
-        self.opt_ALGORITHMS.addItems(['RC4', 'SDES'])
+        self.opt_ALGORITHMS.addItems(['RC4', 'SDES (EBC)', 'SDES (CBC)'])
         self.opt_ALGORITHMS.setGeometry(290, 110, 100, 30)
         self.opt_ALGORITHMS.currentIndexChanged.connect(self.updateTypeKEY)
 
@@ -122,7 +122,7 @@ class mainWindow(QMainWindow):
         shadow_effect.setColor(QColor(0, 0, 0, 150))  # Definir a cor da sombra
         shadow_effect.setOffset(0, 0)  # Definir o deslocamento da sombra
         self.text_MSGCHAT.setGraphicsEffect(shadow_effect)
-        
+
         scrollbar = QScrollBar(self)
         scrollbar.setGeometry(380, 200, 20, 300)
         self.text_MSGCHAT.setVerticalScrollBar(scrollbar)
@@ -147,7 +147,7 @@ class mainWindow(QMainWindow):
         shadow_effect.setColor(QColor(0, 0, 0, 150))  # Definir a cor da sombra
         shadow_effect.setOffset(0, 0)  # Definir o deslocamento da sombra
         self.text_MSGCHAT_CRIPTO.setGraphicsEffect(shadow_effect)
-        
+
         scrollbar = QScrollBar(self)
         scrollbar.setGeometry(380, 200, 20, 300)
         self.text_MSGCHAT_CRIPTO.setVerticalScrollBar(scrollbar)
@@ -161,8 +161,9 @@ class mainWindow(QMainWindow):
         # Botão Enviar mensagem
         self.btn_Enviar = QPushButton('Enviar', self)
         self.btn_Enviar.setGeometry(290, 520, 100, 30)
-        self.btn_Enviar.clicked.connect(lambda: self.enviar_mensagem('servidor', self.opt_ALGORITHMS.currentText()))
-    
+        self.btn_Enviar.clicked.connect(lambda: self.enviar_mensagem(
+            'servidor', self.opt_ALGORITHMS.currentText()))
+
 # SERVIDOR
 ######################################
     def start(self):
@@ -178,21 +179,28 @@ class mainWindow(QMainWindow):
     def handle_connection(self):
         try:
             self.client_socket = self.Servidor.nextPendingConnection()
-            self.client_socket.readyRead.connect(lambda: self.receive_message(self.client_socket))
-            self.client_socket.disconnected.connect(lambda: self.disconnect_client(self.client_socket))
+            self.client_socket.readyRead.connect(
+                lambda: self.receive_message(self.client_socket))
+            self.client_socket.disconnected.connect(
+                lambda: self.disconnect_client(self.client_socket))
 
         except:
-            self.client_socket.readyRead.connect(lambda: self.receive_message(self.client_socket))
-            self.client_socket.disconnected.connect(lambda: self.disconnect_client(self.client_socket))
+            self.client_socket.readyRead.connect(
+                lambda: self.receive_message(self.client_socket))
+            self.client_socket.disconnected.connect(
+                lambda: self.disconnect_client(self.client_socket))
 
-        print("Novo cliente conectado:", self.client_socket.peerAddress().toString())
+        print("Novo cliente conectado:",
+              self.client_socket.peerAddress().toString())
 
     def receive_message(self, client_socket):
         message = client_socket.readAll().data()
-        print("Mensagem recebida de", client_socket.peerAddress().toString(), ":", message)
+        print("Mensagem recebida de",
+              client_socket.peerAddress().toString(), ":", message)
 
         # Mensagem recebida, entao vai Decriptar
-        self.decripta_GLOBAL(self.text_KEY.text(), message, client_socket.peerAddress().toString(), self.opt_ALGORITHMS.currentText())
+        self.decripta_GLOBAL(self.text_KEY.text(), message, client_socket.peerAddress(
+        ).toString(), self.opt_ALGORITHMS.currentText())
 
     def disconnect_client(self, client_socket):
         print("Cliente desconectado:", client_socket.peerAddress().toString())
@@ -207,31 +215,34 @@ class mainWindow(QMainWindow):
         if self.text_PORT_Destino.text() == "":
             self.notify_box("Porta Destino")
             return
-        self.Cliente.connectToHost(str(self.text_IP.text()), int(self.text_PORT_Destino.text()))
+        self.Cliente.connectToHost(
+            str(self.text_IP.text()), int(self.text_PORT_Destino.text()))
 
     def recebeMsg_Cliente(self):
         mensagem_ = self.Cliente.readAll().data()
-        self.decripta_GLOBAL(self.text_KEY.text(), mensagem_, self.Cliente.peerAddres().toString(), self.opt_ALGORITHMS.currentText())
-        
+        self.decripta_GLOBAL(self.text_KEY.text(), mensagem_, self.Cliente.peerAddres(
+        ).toString(), self.opt_ALGORITHMS.currentText())
+
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress and obj is self.text_MSG:
             if event.key() == Qt.Key_Return:
-                self.enviar_mensagem('servidor', self.opt_ALGORITHMS.currentText())
+                self.enviar_mensagem(
+                    'servidor', self.opt_ALGORITHMS.currentText())
                 return True
             return False
-        
+
         return False
 
     def updateTypeKEY(self):
         OPT = self.opt_ALGORITHMS.currentText()
 
-        if OPT == 'SDES':
+        if OPT == 'SDES (EBC)' or OPT == 'SDES (CBC)':
             self.text_KEY.clear()
             self.text_KEY.setValidator(Validator("01"))
             self.text_KEY.setMaxLength(10)
 
             self.text_MSG.clear()
-            
+
         elif OPT == 'RC4':
             self.text_KEY.clear()
             self.text_KEY.setValidator(None)
@@ -252,7 +263,8 @@ class mainWindow(QMainWindow):
         try:
             # Cria um socket para obter o IP local
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.connect(("8.8.8.8", 80))  # Conecta a um servidor externo (Google DNS)
+            # Conecta a um servidor externo (Google DNS)
+            sock.connect(("8.8.8.8", 80))
 
             # Obtém o endereço IP local
             local_ip = sock.getsockname()[0]
@@ -263,18 +275,19 @@ class mainWindow(QMainWindow):
             return local_ip
         except socket.error:
             return None
-    
+
     def compilaCodigos(self):
         comandos = [
             ['gcc', '-shared', '-o', 'sdes.so', '-fPIC', 'sdes.c']
-            #['gcc', '-shared', '-o', 'rc4.so', '-fPIC', 'rc4.c']
+            # ['gcc', '-shared', '-o', 'rc4.so', '-fPIC', 'rc4.c']
         ]
-        paths = ['sdes/']#, 'rc4/']
+        paths = ['sdes/']  # , 'rc4/']
 
         for i in range(len(comandos)):
             original_path = os.getcwd()
             os.chdir(paths[i])
-            resultado = subprocess.run(comandos[i], capture_output=True, text=True)
+            resultado = subprocess.run(
+                comandos[i], capture_output=True, text=True)
             self.printaERRO(resultado)
             os.chdir(original_path)
 
@@ -297,52 +310,67 @@ class mainWindow(QMainWindow):
             None
 
     def decripta_GLOBAL(self, chave_, mensagem_cripto, cliente_ip, opt_algoritmo):
-        if opt_algoritmo == 'SDES':
+        if opt_algoritmo == 'SDES (EBC)' or opt_algoritmo == 'SDES (CBC)':
             mensagem_dcripto = ""
+            if opt_algoritmo == 'SDES (EBC)':
+                mode = 0
+            else:
+                mode = 1
             print(type(mensagem_cripto))
-            #print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
-            for i in range(0, len(mensagem_cripto), 8):
+            # print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
+            for i in range(len(mensagem_cripto), 8,  8):
+
                 buffer = create_string_buffer(8)
-                msg_slice = mensagem_cripto[i:i+8]
+                msg_slice = mensagem_cripto[i-8:i]
+                if i == len(mensagem_cripto):
+                    ant = "10101010"
+                else:
+                    ant = mensagem_cripto[i-16:i-8]
                 print(msg_slice)
-                self.sdes_functions.dcript(chave_.encode(), bytes(msg_slice), buffer)
-                mensagem_dcripto += chr(int(buffer.value.decode('latin-1'),2))
-            self.envia_mensagemCHAT(mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
+                self.sdes_functions.dcript(
+                    chave_.encode(), bytes(msg_slice), buffer, mode, ant)
+                mensagem_dcripto += chr(int(buffer.value.decode('latin-1'), 2))
+            self.envia_mensagemCHAT(
+                mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
 
         if opt_algoritmo == 'RC4':
             mensagem_dcripto = RC4(chave_.encode(), mensagem_cripto).decode()
-            self.envia_mensagemCHAT(mensagem_cripto.hex(), mensagem_dcripto, cliente_ip)
-            
+            self.envia_mensagemCHAT(
+                mensagem_cripto.hex(), mensagem_dcripto, cliente_ip)
 
     def envia_mensagemCHAT(self, mensagem_cripto, mensagem_dcripto, cliente_ip):
         R = randint(0, 255)
         G = randint(0, 255)
         B = randint(0, 255)
-        
+
         if cliente_ip not in self.msgColors:
-            self.msgColors[cliente_ip] = QColor(R,G,B)
+            self.msgColors[cliente_ip] = QColor(R, G, B)
 
         formato = QTextCharFormat()
         formato.setForeground(self.msgColors[cliente_ip])
         formato.setFontWeight(QFont.Bold)
 
         self.text_MSGCHAT.setCurrentCharFormat(formato)
-        self.text_MSGCHAT.append('<'+str(cliente_ip)+'>: '+ str(mensagem_dcripto))
+        self.text_MSGCHAT.append(
+            '<'+str(cliente_ip)+'>: ' + str(mensagem_dcripto))
 
         self.text_MSGCHAT_CRIPTO.setCurrentCharFormat(formato)
-        self.text_MSGCHAT_CRIPTO.append('<'+str(cliente_ip)+'>: '+ str(mensagem_cripto))
+        self.text_MSGCHAT_CRIPTO.append(
+            '<'+str(cliente_ip)+'>: ' + str(mensagem_cripto))
 
     def encripta_RC4(self, chave_, mensagem):
         tamMsg = len(mensagem)
         cifrado_ = (ctypes.c_ubyte * tamMsg)()
-        self.rc4_functions.cript(chave_.encode(), mensagem.encode(), cifrado_, tamMsg)
+        self.rc4_functions.cript(
+            chave_.encode(), mensagem.encode(), cifrado_, tamMsg)
         return bytes(cifrado_)
-    
+
     def decripta_RC4(self, chave_, mensagem):
         cifrado_ = bytes.fromhex(mensagem)
         tamMsg = len(mensagem)
         decifrado_ = (ctypes.c_ubyte * tamMsg)()
-        decifrado_ = self.rc4_functions.cript(chave_, cifrado_, decifrado_, tamMsg)
+        decifrado_ = self.rc4_functions.cript(
+            chave_, cifrado_, decifrado_, tamMsg)
         decifrado_ = bytes(decifrado_)
         return decifrado_
 
@@ -354,7 +382,7 @@ class mainWindow(QMainWindow):
     def enviar_mensagem(self, identidade, opt_Algoritmo):
         mensagem = str(self.text_MSG.text())
         chave_ = str(self.text_KEY.text())
-        
+
         if mensagem == "":
             return
 
@@ -362,28 +390,41 @@ class mainWindow(QMainWindow):
             self.notify_box("Chave de Criptografia")
             return
 
-        if opt_Algoritmo == 'SDES':
+        if opt_Algoritmo == 'SDES (EBC)' or opt_Algoritmo == 'SDES (CBC)':
+            mensagem_dcripto = ""
+            if opt_Algoritmo == 'SDES (EBC)':
+                mode = 0
+            else:
+                mode = 1
             mensagem_cripto = ""
-            buffer = [create_string_buffer(8) for i in range(len(mensagem))] # buffer de 8 bits pra cada letra
+            buffer = [create_string_buffer(8) for i in range(
+                len(mensagem))]  # buffer de 8 bits pra cada letra
 
             for i in range(len(mensagem)):
+                if i == 0:
+                    ant = "10101010"
+                else:
+                    ant = letra
                 letra = bin(ord(mensagem[i])).replace("b", "")
                 if len(letra) < 8:
                     letra = "0"*(8-len(letra)) + letra
-                self.sdes_functions.cript(chave_.encode(), letra.encode('latin-1'), buffer[i])
-                letra = str(bytes(buffer[i].value)).replace("b","").replace("'","")
+                self.sdes_functions.cript(
+                    chave_.encode(), letra.encode('latin-1'), buffer[i], mode, ant)
+                letra = str(bytes(buffer[i].value)).replace(
+                    "b", "").replace("'", "")
+                print(letra, type(letra))
                 mensagem_cripto += letra
-                
+
             temp = ""
             for i in range(len(buffer)):
                 temp += str(buffer[i].value.decode())
-        
-            self.envia_mensagemCHAT(temp, mensagem, self.local_IP.text())
 
+            self.envia_mensagemCHAT(temp, mensagem, self.local_IP.text())
 
         elif opt_Algoritmo == 'RC4':
             mensagem_cripto = RC4(chave_.encode(), mensagem.encode())
-            self.envia_mensagemCHAT(mensagem_cripto.hex(), mensagem, self.local_IP.text())
+            self.envia_mensagemCHAT(
+                mensagem_cripto.hex(), mensagem, self.local_IP.text())
 
         self.Cliente.write(mensagem_cripto.encode('latin-1'))
 
@@ -391,8 +432,9 @@ class mainWindow(QMainWindow):
 
     def get_instancia(cls):
         if not cls.__instancia__:
-            cls.__instancia__= super().get_instancia(cls)
+            cls.__instancia__ = super().get_instancia(cls)
         return cls.__instancia__
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
