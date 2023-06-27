@@ -297,9 +297,7 @@ char* getResult(char *seq_bits, char K[], int qualK){
 
 void dcript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buffer[]){
     int IP1[] = {4,1,3,5,7,2,8,6};
-
-    int qtdOP; // quantidade de operacoes
-    char OP_CD; // operacao Cifrar ou Decifrar
+    
     char *K1;
     char *K2;
     char retorno[8];
@@ -317,10 +315,6 @@ void dcript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     resultado = getResult(resultado, K1, 2);
     resultado = Permutation(resultado, IP1, 8);
     strcpy(buffer, resultado);
-
-    // int i = 0;
-    // for(i=0;i<8;i++)
-    //     output[i] = resultado[i];
     
 }
 
@@ -328,8 +322,6 @@ char* cript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     int IP1[] = {4,1,3,5,7,2,8,6};
 
     //printf("TA ASSIM ó -> %u\n", seq_bits);
-    int qtdOP; // quantidade de operacoes
-    char OP_CD; // operacao Cifrar ou Decifrar
     char *K1;
     char *K2;
     char retorno[8];
@@ -345,15 +337,6 @@ char* cript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
     resultado = getResult(resultado, K2, 2);
     resultado = Permutation(resultado, IP1, 8);
     strcpy(buffer, resultado);
-
-    // int i = 0;
-    // for(i=0;i<8;i++)
-    //     output[i] = resultado[i];
-
-    // FILE *arquivo;
-    // arquivo = fopen("chatLOG.txt", "a");
-    // fprintf(arquivo,"%s\n", output);
-    // fclose(arquivo);
     
 }
 
