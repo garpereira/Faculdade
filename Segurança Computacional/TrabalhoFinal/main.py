@@ -500,7 +500,6 @@ class mainWindow(QMainWindow):
         elif opt_Algoritmo == 'SDES + DH':
             pass
 
-
         try:
             self.Cliente.write(mensagem_cripto.encode('latin-1'))
         except:
