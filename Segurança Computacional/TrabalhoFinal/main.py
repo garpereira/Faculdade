@@ -110,6 +110,7 @@ class mainWindow(QMainWindow):
         self.opt_ALGORITHMS = QComboBox(self)
         self.opt_ALGORITHMS.addItems(
             ['RC4', 'SDES', 'ECB', 'CBC', 'RC4 + DH', 'SDES + DH'])
+
         self.opt_ALGORITHMS.setGeometry(290, 110, 100, 30)
         self.opt_ALGORITHMS.currentIndexChanged.connect(self.updateTypeKEY)
 
@@ -272,13 +273,13 @@ class mainWindow(QMainWindow):
                     'servidor', self.opt_ALGORITHMS.currentText())
                 return True
             return False
-
+          
         return False
 
     def updateTypeKEY(self):
         OPT = self.opt_ALGORITHMS.currentText()
 
-        if OPT in ['SDES', 'ECB']:
+        if OPT in ['SDES', 'ECB', 'CBC']:
             self.text_KEY.clear()
             self.text_KEY.setValidator(Validator("01"))
             self.text_KEY.setMaxLength(10)
@@ -366,12 +367,10 @@ class mainWindow(QMainWindow):
     def decripta_GLOBAL(self, chave_, mensagem_cripto, cliente_ip, opt_algoritmo):
         if opt_algoritmo == 'SDES':
             mensagem_dcripto = ""
-            # print(type(mensagem_cripto))
-            # print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
+
             for i in range(0, len(mensagem_cripto), 8):
                 buffer = create_string_buffer(8)
                 msg_slice = mensagem_cripto[i:i+8]
-                # print(msg_slice)
                 self.sdes_functions.dcript(
                     chave_.encode(), bytes(msg_slice), buffer)
                 mensagem_dcripto += chr(int(buffer.value.decode('latin-1'), 2))
@@ -390,6 +389,7 @@ class mainWindow(QMainWindow):
                 for binario in range(0, len(bloco), 8):
                     buffer = create_string_buffer(8)
                     msg_slice = bloco[binario:binario+8]
+
                     self.sdes_functions.dcript(
                         chave_.encode(), bytes(msg_slice), buffer)
                     mensagem_dcripto += chr(int(buffer.value.decode('latin-1'), 2))
@@ -406,7 +406,7 @@ class mainWindow(QMainWindow):
                 for binario in range(0, len(bloco), 8):
                     buffer = create_string_buffer(8)
                     msg_slice = bloco[binario:binario+8]
-                    print(f'msg slicada {msg_slice}')
+
                     self.sdes_functions.dcript(
                         chave_.encode(), bytes(msg_slice), buffer)
                     print(f'buffer {buffer.value.decode("latin-1")}')
@@ -503,10 +503,18 @@ class mainWindow(QMainWindow):
         decifrado_ = bytes(decifrado_)
         return decifrado_
 
-    def divide_mensagem(self, mensagem, tam):
+    def divide_mensagemCBC(self, mensagem, tam, mensagem_blocadaCripto = []):
+        divisao = []
+        for i in range(0, len(mensagem), tam):
+            divisao.append(str(mensagem[i:i+tam]).replace("b","").replace("'",""))
+            mensagem_blocadaCripto.append([])
+        return divisao
+    
+    def divide_mensagem(self, mensagem, tam, mensagem_blocadaCripto = []):
         divisao = []
         for i in range(0, len(mensagem), tam):
             divisao.append(mensagem[i:i+tam])
+            mensagem_blocadaCripto.append([])
         return divisao
 
     def notify_box(self, campo):
@@ -656,12 +664,6 @@ class mainWindow(QMainWindow):
                 letra = str(bytes(buffer[i].value)).replace(
                     "b", "").replace("'", "")
                 mensagem_cripto += letra
-
-            temp = ""
-            for i in range(len(buffer)):
-                temp += str(buffer[i].value.decode())
-
-            self.envia_mensagemCHAT(temp, mensagem, self.local_IP.text())
 
         try:
             self.Cliente.write(mensagem_cripto.encode('latin-1'))

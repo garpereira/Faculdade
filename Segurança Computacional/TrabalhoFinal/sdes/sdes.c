@@ -303,7 +303,6 @@ void dcript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buf
 char *cript(unsigned char chave_K[], unsigned char seq_bits[], unsigned char buffer[]) {
     int IP1[] = {4, 1, 3, 5, 7, 2, 8, 6};
 
-    // printf("TA ASSIM ó -> %u\n", seq_bits);
     char *K1;
     char *K2;
     char retorno[8];
