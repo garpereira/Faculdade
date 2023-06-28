@@ -20,6 +20,15 @@ class Validator(QRegExpValidator):
         super().__init__(QRegExp(f"[{pattern}]+"))
 
 
+flag_first_message = True
+p_ = 353
+alfa_ = 3
+Xa_ = 0
+Xb_ = 0
+Ya_ = 0
+Yb_ = 0
+
+
 class mainWindow(QMainWindow):
 
     __instancia__ = None
@@ -63,6 +72,7 @@ class mainWindow(QMainWindow):
 
         self.local_IP = QLineEdit(self)
         self.local_IP.setPlaceholderText(str(self.MyIP))
+        self.local_IP.setText(str(self.MyIP))
         self.local_IP.setGeometry(10, 10, 120, 30)
         self.local_IP.setReadOnly(True)
 
@@ -98,7 +108,8 @@ class mainWindow(QMainWindow):
 
         # Caixa de Seleção do Algoritmo
         self.opt_ALGORITHMS = QComboBox(self)
-        self.opt_ALGORITHMS.addItems(['RC4', 'SDES (EBC)', 'SDES (CBC)'])
+        self.opt_ALGORITHMS.addItems(
+            ['RC4', 'SDES', 'ECB', 'CBC', 'RC4 + DH', 'SDES + DH'])
         self.opt_ALGORITHMS.setGeometry(290, 110, 100, 30)
         self.opt_ALGORITHMS.currentIndexChanged.connect(self.updateTypeKEY)
 
@@ -164,8 +175,10 @@ class mainWindow(QMainWindow):
         self.btn_Enviar.clicked.connect(lambda: self.enviar_mensagem(
             'servidor', self.opt_ALGORITHMS.currentText()))
 
+
 # SERVIDOR
 ######################################
+
     def start(self):
         if self.text_PORT_Local.text() == "":
             self.notify_box("Porta Local")
@@ -194,13 +207,28 @@ class mainWindow(QMainWindow):
               self.client_socket.peerAddress().toString())
 
     def receive_message(self, client_socket):
+        global flag_first_message, p_, alfa_, Yb_, Xa_
         message = client_socket.readAll().data()
-        print("Mensagem recebida de",
+        print("(" + str(flag_first_message)+")Mensagem recebida de",
               client_socket.peerAddress().toString(), ":", message)
+        if (flag_first_message):
+            # primeira mensagme é a chave DH
+            global Yb_
+            Yb_ = int.from_bytes(message, 'big')
+            print("Yb recebido:", Yb_)
+            flag_first_message = False
+        else:
+            # Mensagem recebida, entao vai Decriptar
+            print("Decriptando...")
 
-        # Mensagem recebida, entao vai Decriptar
-        self.decripta_GLOBAL(self.text_KEY.text(), message, client_socket.peerAddress(
-        ).toString(), self.opt_ALGORITHMS.currentText())
+            K = (Yb_**Xa_) % p_  # Chave compartilhada
+            chave_ = str(K)
+            print("Chave compartilhada: ", K)
+
+            self.text_KEY.setText(chave_)
+
+            self.decripta_GLOBAL(self.text_KEY.text(), message, client_socket.peerAddress(
+            ).toString(), self.opt_ALGORITHMS.currentText())
 
     def disconnect_client(self, client_socket):
         print("Cliente desconectado:", client_socket.peerAddress().toString())
@@ -236,10 +264,11 @@ class mainWindow(QMainWindow):
     def updateTypeKEY(self):
         OPT = self.opt_ALGORITHMS.currentText()
 
-        if OPT == 'SDES (EBC)' or OPT == 'SDES (CBC)':
+        if OPT in ['SDES', 'ECB']:
             self.text_KEY.clear()
             self.text_KEY.setValidator(Validator("01"))
             self.text_KEY.setMaxLength(10)
+            self.text_KEY.setReadOnly(False)
 
             self.text_MSG.clear()
 
@@ -247,10 +276,21 @@ class mainWindow(QMainWindow):
             self.text_KEY.clear()
             self.text_KEY.setValidator(None)
             self.text_KEY.setMaxLength(256)
+            self.text_KEY.setReadOnly(False)
 
             self.text_MSG.clear()
             self.text_MSG.setValidator(None)
             self.text_MSG.setMaxLength(256)
+
+        elif OPT == 'RC4 + DH' or OPT == 'SDES + DH':
+            self.text_KEY.clear()
+            self.text_KEY.setReadOnly(True)
+            global p_, alfa_, Xa_, Ya_
+            Xa_ = randint(0, p_)  # Número secreto
+            Ya_ = (alfa_**Xa_) % p_  # Número público
+            # envia Ya para o outro lado
+            print("Xa: ", Xa_, " Ya: ", Ya_, " p: ", p_, " alfa: ", alfa_)
+            self.Cliente.write(Ya_.to_bytes(2, byteorder='big'))
 
     def printaERRO(self, resultado):
         if resultado.returncode == 0:
@@ -310,33 +350,85 @@ class mainWindow(QMainWindow):
             None
 
     def decripta_GLOBAL(self, chave_, mensagem_cripto, cliente_ip, opt_algoritmo):
-        if opt_algoritmo == 'SDES (EBC)' or opt_algoritmo == 'SDES (CBC)':
+        if opt_algoritmo == 'SDES':
             mensagem_dcripto = ""
-            if opt_algoritmo == 'SDES (EBC)':
-                mode = 0
-            else:
-                mode = 1
-            print(type(mensagem_cripto))
+            # print(type(mensagem_cripto))
             # print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
-            for i in range(len(mensagem_cripto), 8,  8):
-
+            for i in range(0, len(mensagem_cripto), 8):
                 buffer = create_string_buffer(8)
-                msg_slice = mensagem_cripto[i-8:i]
-                if i == len(mensagem_cripto):
-                    ant = "10101010"
-                else:
-                    ant = mensagem_cripto[i-16:i-8]
-                print(msg_slice)
+                msg_slice = mensagem_cripto[i:i+8]
+                # print(msg_slice)
                 self.sdes_functions.dcript(
-                    chave_.encode(), bytes(msg_slice), buffer, mode, ant)
+                    chave_.encode(), bytes(msg_slice), buffer)
                 mensagem_dcripto += chr(int(buffer.value.decode('latin-1'), 2))
             self.envia_mensagemCHAT(
                 mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
 
-        if opt_algoritmo == 'RC4':
+        elif opt_algoritmo == 'RC4':
             mensagem_dcripto = RC4(chave_.encode(), mensagem_cripto).decode()
             self.envia_mensagemCHAT(
                 mensagem_cripto.hex(), mensagem_dcripto, cliente_ip)
+
+        elif opt_algoritmo == 'ECB':
+            mensagem_dcripto = ""
+            mensagem_blocada = self.divide_mensagem(mensagem_cripto, (8*8))
+            for bloco in mensagem_blocada:
+                for binario in range(0, len(bloco), 8):
+                    buffer = create_string_buffer(8)
+                    msg_slice = bloco[binario:binario+8]
+                    self.sdes_functions.dcript(
+                        chave_.encode(), bytes(msg_slice), buffer)
+                    mensagem_dcripto += chr(int(buffer.value.decode('latin-1'), 2))
+            self.envia_mensagemCHAT(
+                mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
+
+        elif opt_algoritmo == 'CBC':
+            mensagem_dcripto = ""
+            mensagem_blocada = self.divide_mensagem(mensagem_cripto, (8*8))
+            IV = "00110010"
+            IV = int(IV, base=2)
+            i = 0
+            for bloco in mensagem_blocada:
+                for binario in range(0, len(bloco), 8):
+                    buffer = create_string_buffer(8)
+                    msg_slice = bloco[binario:binario+8]
+                    print(f'msg slicada {msg_slice}')
+                    self.sdes_functions.dcript(
+                        chave_.encode(), bytes(msg_slice), buffer)
+                    print(f'buffer {buffer.value.decode("latin-1")}')
+                    if i == 0:
+                        binXor = IV ^ int(
+                            buffer.value.decode("latin-1"), base=2)
+                        print(f'binxorado caso base {binXor}')
+                    else:
+                        print(
+                            f'Binario que vai {mensagem_blocada[i-1][binario:binario+8]}')
+                        print(
+                            f'BUFFER XORADO SEM CASO BASE {buffer.value.decode("latin-1")}')
+                        print(int(buffer.value.decode('latin-1'), base=2))
+                        binXor = int(mensagem_blocada[i-1][binario:binario+8], base=2) ^ int(
+                            buffer.value.decode('latin-1'), base=2)
+                        print(f'binxorado caso nao base {binXor}')
+                    mensagem_dcripto += chr(binXor)
+                i += 1
+            self.envia_mensagemCHAT(
+                mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
+
+        elif opt_algoritmo == 'RC4 + DH':
+            if chave_ == "":
+                K = (Yb_**Xa_) % p_  # Chave compartilhada
+                chave_ = str(K)
+                print("Chave compartilhada: ", K)
+
+                self.text_KEY.setText(chave_)
+            print("(decriptando)Chave compartilhada: ", chave_)
+            mensagem_dcripto = RC4(chave_.encode(),
+                                   mensagem_cripto).decode()
+            self.envia_mensagemCHAT(
+                mensagem_cripto.hex(), mensagem_dcripto, cliente_ip)
+
+        elif opt_algoritmo == 'SDES + DH':
+            pass
 
     def envia_mensagemCHAT(self, mensagem_cripto, mensagem_dcripto, cliente_ip):
         R = randint(0, 255)
@@ -374,6 +466,12 @@ class mainWindow(QMainWindow):
         decifrado_ = bytes(decifrado_)
         return decifrado_
 
+    def divide_mensagem(self, mensagem, tam):
+        divisao = []
+        for i in range(0, len(mensagem), tam):
+            divisao.append(mensagem[i:i+tam])
+        return divisao
+
     def notify_box(self, campo):
         msg_notify = QMessageBox(self)
         msg_notify.setText("Preencha o(a) "+campo)
@@ -386,33 +484,23 @@ class mainWindow(QMainWindow):
         if mensagem == "":
             return
 
-        if chave_ == "":
+        if chave_ == "" and not (opt_Algoritmo == 'RC4 + DH' or opt_Algoritmo == 'SDES + DH'):
             self.notify_box("Chave de Criptografia")
             return
 
-        if opt_Algoritmo == 'SDES (EBC)' or opt_Algoritmo == 'SDES (CBC)':
-            mensagem_dcripto = ""
-            if opt_Algoritmo == 'SDES (EBC)':
-                mode = 0
-            else:
-                mode = 1
+        if opt_Algoritmo == 'SDES':
             mensagem_cripto = ""
             buffer = [create_string_buffer(8) for i in range(
                 len(mensagem))]  # buffer de 8 bits pra cada letra
 
             for i in range(len(mensagem)):
-                if i == 0:
-                    ant = "10101010"
-                else:
-                    ant = letra
                 letra = bin(ord(mensagem[i])).replace("b", "")
                 if len(letra) < 8:
                     letra = "0"*(8-len(letra)) + letra
                 self.sdes_functions.cript(
-                    chave_.encode(), letra.encode('latin-1'), buffer[i], mode, ant)
+                    chave_.encode(), letra.encode('latin-1'), buffer[i])
                 letra = str(bytes(buffer[i].value)).replace(
                     "b", "").replace("'", "")
-                print(letra, type(letra))
                 mensagem_cripto += letra
 
             temp = ""
@@ -426,8 +514,92 @@ class mainWindow(QMainWindow):
             self.envia_mensagemCHAT(
                 mensagem_cripto.hex(), mensagem, self.local_IP.text())
 
-        self.Cliente.write(mensagem_cripto.encode('latin-1'))
+        elif opt_Algoritmo == 'ECB':
+            mensagem_cripto = ""
+            buffer = [create_string_buffer(8) for i in range(len(mensagem))]
+            mensagem_blocada = self.divide_mensagem(mensagem, 8)
+            i = 0
+            for bloco in mensagem_blocada:
+                for letra in bloco:
+                    letraI = bin(ord(letra)).replace("b", "")
+                    if len(letraI) < 8:
+                        letraI = "0"*(8-len(letraI)) + letraI
+                    self.sdes_functions.cript(
+                        chave_.encode(), letraI.encode('latin-1'), buffer[i])
+                    letraI = str(bytes(buffer[i].value)).replace(
+                        "b", "").replace("'", "")
+                    mensagem_cripto += letraI
+                    i += 1
+            temp = ""
+            for i in range(len(buffer)):
+                temp += str(buffer[i].value.decode())
 
+            self.envia_mensagemCHAT(temp, mensagem, self.local_IP.text())
+
+        elif opt_Algoritmo == 'CBC':
+            mensagem_cripto = ""
+            IV = "00110010"
+            IV = int(IV, base=2)
+            buffer = [create_string_buffer(8) for i in range(len(mensagem))]
+            mensagem_blocada = self.divide_mensagem(mensagem, 8)
+            i = 0
+            for bloco in range(len(mensagem_blocada)):
+                for letra in range(len(mensagem_blocada[bloco])):
+                    letraBin = bin(
+                        ord(mensagem_blocada[bloco][letra])).replace("b", "")
+                    if len(letraBin) < 8:
+                        letraBin = "0"*(8-len(letraBin)) + letraBin
+
+                    letraBin = int(letraBin, base=2)
+                    if bloco == 0:
+                        letraBin = letraBin ^ IV
+
+                    else:
+                        letraBinAnterior = bin(
+                            ord(mensagem_blocada[bloco-1][letra])).replace("b", "")
+                        if len(letraBinAnterior) < 8:
+                            letraBinAnterior = "0" * \
+                                (8-len(letraBinAnterior)) + letraBinAnterior
+                        letraBinAnterior = int(letraBinAnterior, base=2)
+
+                        letraBin = letraBin ^ letraBinAnterior
+
+                    letraBin = bin(letraBin).replace("b", "")
+                    if len(letraBin) < 8:
+                        letraBin = "0"*(8-len(letraBin)) + letraBin
+
+                    self.sdes_functions.cript(
+                        chave_.encode(), letraBin.encode('latin-1'), buffer[i])
+                    letraBin = str(bytes(buffer[i].value)).replace(
+                        "b", "").replace("'", "")
+                    mensagem_cripto += letraBin
+                    i += 1
+
+            temp = ""
+            for i in range(len(buffer)):
+                temp += str(buffer[i].value.decode())
+
+            self.envia_mensagemCHAT(temp, mensagem, self.local_IP.text())
+
+        elif opt_Algoritmo == 'RC4 + DH':
+            if chave_ == "":
+                K = (Yb_**Xa_) % p_  # Chave compartilhada
+                chave_ = str(K)
+                print("Chave compartilhada: ", K)
+
+                self.text_KEY.setText(chave_)
+            print("Chave: ", chave_)
+            mensagem_cripto = RC4(chave_.encode(), mensagem.encode())
+            self.envia_mensagemCHAT(
+                mensagem_cripto.hex(), mensagem, self.local_IP.text())
+
+        elif opt_Algoritmo == 'SDES + DH':
+            pass
+
+        try:
+            self.Cliente.write(mensagem_cripto.encode('latin-1'))
+        except:
+            self.Cliente.write(mensagem_cripto)
         self.text_MSG.clear()
 
     def get_instancia(cls):
