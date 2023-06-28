@@ -222,7 +222,21 @@ class mainWindow(QMainWindow):
             print("Decriptando...")
 
             K = (Yb_**Xa_) % p_  # Chave compartilhada
-            chave_ = str(K)
+            if self.opt_ALGORITHMS.currentText() == 'SDES + DH':
+                K = (Yb_**Xa_) % p_  # Chave compartilhada
+                print("(621)Chave: ", K)
+                temp = ""
+                for char in (str(K)):
+                    temp += bin(ord(char)).replace("b", "")
+                chave_ = temp[0:9]
+                print("(626)Chave: ", K)
+
+                if (len(chave_) < 10):
+                    chave_ = "0"*(10-len(chave_)) + chave_
+                print("Chave: ", chave_)
+            else:
+                chave_ = str(K)
+                print("chave não-binaria", self.opt_ALGORITHMS.currentText())
             print("Chave compartilhada: ", K)
 
             self.text_KEY.setText(chave_)
@@ -428,7 +442,30 @@ class mainWindow(QMainWindow):
                 mensagem_cripto.hex(), mensagem_dcripto, cliente_ip)
 
         elif opt_algoritmo == 'SDES + DH':
-            pass
+            if chave_ == "":
+                K = (Yb_**Xa_) % p_  # Chave compartilhada
+                print("(621)Chave: ", K)
+                temp = ""
+                for char in (str(K)):
+                    temp += bin(ord(char)).replace("b", "")
+                chave_ = temp[0:9]
+                print("(626)Chave: ", K)
+                if (len(chave_) < 10):
+                    chave_ = "0"*(10-len(chave_)) + chave_
+                print("Chave: ", chave_)
+                self.text_KEY.setText(chave_)
+            mensagem_dcripto = ""
+            # print(type(mensagem_cripto))
+            # print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
+            for i in range(0, len(mensagem_cripto), 8):
+                buffer = create_string_buffer(8)
+                msg_slice = mensagem_cripto[i:i+8]
+                # print(msg_slice)
+                self.sdes_functions.dcript(
+                    chave_.encode(), bytes(msg_slice), buffer)
+                mensagem_dcripto += chr(int(buffer.value.decode('latin-1'), 2))
+            self.envia_mensagemCHAT(
+                mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
 
     def envia_mensagemCHAT(self, mensagem_cripto, mensagem_dcripto, cliente_ip):
         R = randint(0, 255)
@@ -594,7 +631,37 @@ class mainWindow(QMainWindow):
                 mensagem_cripto.hex(), mensagem, self.local_IP.text())
 
         elif opt_Algoritmo == 'SDES + DH':
-            pass
+            if chave_ == "":
+                K = (Yb_**Xa_) % p_  # Chave compartilhada
+                print("(621)Chave: ", K)
+                temp = ""
+                for char in (str(K)):
+                    temp += bin(ord(char)).replace("b", "")
+                chave_ = temp[0:9]
+                print("(626)Chave: ", K)
+                if (len(chave_) < 10):
+                    chave_ = "0"*(10-len(chave_)) + chave_
+                print("Chave: ", chave_)
+                self.text_KEY.setText(chave_)
+            mensagem_cripto = ""
+            buffer = [create_string_buffer(8) for i in range(
+                len(mensagem))]  # buffer de 8 bits pra cada letra
+
+            for i in range(len(mensagem)):
+                letra = bin(ord(mensagem[i])).replace("b", "")
+                if len(letra) < 8:
+                    letra = "0"*(8-len(letra)) + letra
+                self.sdes_functions.cript(
+                    chave_.encode(), letra.encode('latin-1'), buffer[i])
+                letra = str(bytes(buffer[i].value)).replace(
+                    "b", "").replace("'", "")
+                mensagem_cripto += letra
+
+            temp = ""
+            for i in range(len(buffer)):
+                temp += str(buffer[i].value.decode())
+
+            self.envia_mensagemCHAT(temp, mensagem, self.local_IP.text())
 
         try:
             self.Cliente.write(mensagem_cripto.encode('latin-1'))
