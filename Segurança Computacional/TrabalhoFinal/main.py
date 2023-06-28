@@ -220,13 +220,12 @@ class mainWindow(QMainWindow):
                 self.enviar_mensagem('servidor', self.opt_ALGORITHMS.currentText())
                 return True
             return False
-        
         return False
 
     def updateTypeKEY(self):
         OPT = self.opt_ALGORITHMS.currentText()
 
-        if OPT in ['SDES', 'ECB']:
+        if OPT in ['SDES', 'ECB', 'CBC']:
             self.text_KEY.clear()
             self.text_KEY.setValidator(Validator("01"))
             self.text_KEY.setMaxLength(10)
@@ -300,12 +299,9 @@ class mainWindow(QMainWindow):
     def decripta_GLOBAL(self, chave_, mensagem_cripto, cliente_ip, opt_algoritmo):
         if opt_algoritmo == 'SDES':
             mensagem_dcripto = ""
-            #print(type(mensagem_cripto))
-            #print(f'MsgCriptSDES Python -> {mensagem_cripto.decode()}\n')
             for i in range(0, len(mensagem_cripto), 8):
                 buffer = create_string_buffer(8)
                 msg_slice = mensagem_cripto[i:i+8]
-                #print(msg_slice)
                 self.sdes_functions.dcript(chave_.encode(), bytes(msg_slice), buffer)
                 mensagem_dcripto += chr(int(buffer.value.decode('latin-1'),2))
             self.envia_mensagemCHAT(mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
@@ -327,7 +323,8 @@ class mainWindow(QMainWindow):
 
         elif opt_algoritmo == 'CBC':
             mensagem_dcripto = ""
-            mensagem_blocada = self.divide_mensagem(mensagem_cripto, (8*8))
+            mensagem_blocada = self.divide_mensagemCBC(mensagem_cripto, (8*8))
+            #print(f'MENSAGEM BLOCADA NO DECRIPT -> {mensagem_blocada}')
             IV = "00110010"
             IV = int(IV, base=2)
             i = 0
@@ -335,18 +332,11 @@ class mainWindow(QMainWindow):
                 for binario in range(0, len(bloco), 8):
                     buffer = create_string_buffer(8)
                     msg_slice = bloco[binario:binario+8]
-                    print(f'msg slicada {msg_slice}')
-                    self.sdes_functions.dcript(chave_.encode(), bytes(msg_slice), buffer)
-                    print(f'buffer {buffer.value.decode("latin-1")}')
+                    self.sdes_functions.dcript(chave_.encode(), msg_slice.encode(), buffer)
                     if i == 0:
-                        binXor = IV ^ int(buffer.value.decode("latin-1"), base=2)
-                        print(f'binxorado caso base {binXor}')
+                        binXor = IV ^ int(buffer.value.decode(), base=2)
                     else:
-                        print(f'Binario que vai {mensagem_blocada[i-1][binario:binario+8]}')
-                        print(f'BUFFER XORADO SEM CASO BASE {buffer.value.decode("latin-1")}')
-                        print(int(buffer.value.decode('latin-1'), base=2))
-                        binXor = int(mensagem_blocada[i-1][binario:binario+8], base=2) ^ int(buffer.value.decode('latin-1'), base=2)
-                        print(f'binxorado caso nao base {binXor}')
+                        binXor =  int(buffer.value.decode(), base=2) ^ int(mensagem_blocada[i-1][binario:binario+8], base=2)
                     mensagem_dcripto += chr(binXor)
                 i += 1
             self.envia_mensagemCHAT(mensagem_cripto.decode(), mensagem_dcripto, cliente_ip)
@@ -389,10 +379,18 @@ class mainWindow(QMainWindow):
         decifrado_ = bytes(decifrado_)
         return decifrado_
 
-    def divide_mensagem(self, mensagem, tam):
+    def divide_mensagemCBC(self, mensagem, tam, mensagem_blocadaCripto = []):
+        divisao = []
+        for i in range(0, len(mensagem), tam):
+            divisao.append(str(mensagem[i:i+tam]).replace("b","").replace("'",""))
+            mensagem_blocadaCripto.append([])
+        return divisao
+    
+    def divide_mensagem(self, mensagem, tam, mensagem_blocadaCripto = []):
         divisao = []
         for i in range(0, len(mensagem), tam):
             divisao.append(mensagem[i:i+tam])
+            mensagem_blocadaCripto.append([])
         return divisao
 
     def notify_box(self, campo):
@@ -459,10 +457,13 @@ class mainWindow(QMainWindow):
             IV = "00110010"
             IV = int(IV, base=2)
             buffer = [create_string_buffer(8) for i in range(len(mensagem))]
-            mensagem_blocada = self.divide_mensagem(mensagem, 8)
+            self.mensagem_blocadaCripto = []
+            mensagem_blocada = self.divide_mensagem(mensagem, 8, self.mensagem_blocadaCripto)
+            #print(f'MENSAGEM BLOCADA -> ')
             i = 0
             for bloco in range(len(mensagem_blocada)):
                 for letra in range(len(mensagem_blocada[bloco])):
+                    #print(f'LETRA BIN CBC -> {bin(ord(mensagem_blocada[bloco][letra]))}')
                     letraBin = bin(ord(mensagem_blocada[bloco][letra])).replace("b", "")
                     if len(letraBin) < 8:
                         letraBin = "0"*(8-len(letraBin)) + letraBin
@@ -472,19 +473,25 @@ class mainWindow(QMainWindow):
                         letraBin = letraBin ^ IV
 
                     else:
-                        letraBinAnterior = bin(ord(mensagem_blocada[bloco-1][letra])).replace("b", "")
+                        #letraBinAnterior = bin(ord(self.mensagem_blocadaCripto[bloco-1][letra])).replace("b", "")
+                        letraBinAnterior = self.mensagem_blocadaCripto[bloco-1][letra]
                         if len(letraBinAnterior) < 8:
                             letraBinAnterior = "0"*(8-len(letraBinAnterior)) + letraBinAnterior
+                        
                         letraBinAnterior = int(letraBinAnterior, base=2)
-
+                        
                         letraBin = letraBin ^ letraBinAnterior
 
                     letraBin = bin(letraBin).replace("b", "")
                     if len(letraBin) < 8:
                         letraBin = "0"*(8-len(letraBin)) + letraBin
+                    
+                    elif len(letraBin) > 8:
+                        letraBin = letraBin[1:]
 
-                    self.sdes_functions.cript(chave_.encode(), letraBin.encode('latin-1'), buffer[i])
+                    self.sdes_functions.cript(chave_.encode(), letraBin.encode(), buffer[i])
                     letraBin = str(bytes(buffer[i].value)).replace("b","").replace("'","")
+                    self.mensagem_blocadaCripto[bloco].append(letraBin)
                     mensagem_cripto += letraBin
                     i += 1   
             
