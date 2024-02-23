@@ -1,0 +1,13 @@
+# ignora tudo
+*.exe
+*.c
+*.h
+labirinto
+*
+
+# Exceto
+!labirinto_parte1.c
+!labirintoH.h
+!README.md
+!recursos-3d/
+!*.gitignore
